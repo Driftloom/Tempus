@@ -30,14 +30,14 @@ async def test_complete_user_registration_and_login():
         assert login_response.status_code == 200, "Login failed"
         access_token = login_response.json().get("access_token")
         assert access_token is not None
-            
-            # Step 3: Access protected endpoint
-            tasks_response = await client.get(
-                "/tasks",
-                headers={"Authorization": f"Bearer {access_token}"}
-            )
-            
-            assert tasks_response.status_code == 200
+        
+        # Step 3: Access protected endpoint
+        tasks_response = await client.get(
+            "/tasks",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        
+        assert tasks_response.status_code == 200
 
 
 @pytest.mark.asyncio
