@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "TEMPUS",
+  "version": "0.1.0",
+  "description": "Enterprise-grade personal intelligence layer",
+  "permissions": [
+    "sidePanel",
+    "storage",
+    "contextMenus",
+    "notifications",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "http://localhost:8000/*"
+  ],
+  "background": {
+    "service_worker": "src/background/service-worker.ts",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "src/side-panel/main.html"
+  },
+  "omnibox": {
+    "keyword": "t"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

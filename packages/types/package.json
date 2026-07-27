@@ -1,0 +1,16 @@
+{
+  "name": "@tempus/types",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Generated TypeScript types from TEMPUS Core OpenAPI schema",
+  "main": "./generated/index.ts",
+  "types": "./generated/index.ts",
+  "scripts": {
+    "generate": "node generate.sh",
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^6.7.0",
+    "typescript": "^5.2.0"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "@tempus/core-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Typed TypeScript client for TEMPUS Core API",
+  "main": "./dist/client.js",
+  "types": "./dist/client.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@tempus/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.0"
+  }
+}

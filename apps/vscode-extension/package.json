@@ -1,0 +1,64 @@
+{
+  "name": "tempus-vscode-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TEMPUS VS Code Extension",
+  "publisher": "tempus",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "activationEvents": [
+    "onCommand:tempus.ping",
+    "onCommand:tempus.startTimer",
+    "onCommand:tempus.stopTimer",
+    "onCommand:tempus.quickAddTask",
+    "onCommand:tempus.openDashboard"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "tempus.ping",
+        "title": "TEMPUS: Ping"
+      },
+      {
+        "command": "tempus.startTimer",
+        "title": "TEMPUS: Start Timer"
+      },
+      {
+        "command": "tempus.stopTimer",
+        "title": "TEMPUS: Stop Timer"
+      },
+      {
+        "command": "tempus.quickAddTask",
+        "title": "TEMPUS: Quick Add Task"
+      },
+      {
+        "command": "tempus.openDashboard",
+        "title": "TEMPUS: Open Dashboard"
+      }
+    ],
+    "statusBarItems": [
+      {
+        "id": "tempus.timerStatus",
+        "name": "TEMPUS Timer Status"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./dist/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.50.0",
+    "typescript": "^5.2.0"
+  }
+}
