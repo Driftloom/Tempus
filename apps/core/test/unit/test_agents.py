@@ -93,10 +93,13 @@ async def test_loop_engine_pause_agent(loop_engine, mock_agent):
 async def test_loop_engine_resume_agent(loop_engine, mock_agent):
     """Test resuming an agent."""
     with patch.object(loop_engine.state_store, 'save', new_callable=AsyncMock):
-        await loop_engine.resume_agent(mock_agent.agent_id)
-        
-        # Should not raise exception
-        assert True
+        with patch.object(loop_engine.state_store, 'load', new_callable=AsyncMock) as mock_load:
+            mock_load.return_value = {"status": "paused"}
+            
+            await loop_engine.resume_agent(mock_agent.agent_id)
+            
+            # Verify the agent was resumed
+            assert mock_agent.agent_id in loop_engine.active_agents
 
 
 @pytest.mark.asyncio
@@ -113,6 +116,8 @@ def test_loop_engine_get_status(loop_engine):
     status = loop_engine.get_status("test_agent_id")
     
     assert status is not None
+    assert "status" in status
+    assert status["status"] in ["idle", "running", "paused", "completed"]
 
 
 # Supervisor Tests

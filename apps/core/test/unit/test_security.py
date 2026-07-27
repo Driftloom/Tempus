@@ -248,7 +248,7 @@ def test_verify_recovery_code(recovery_code_manager):
     """Test recovery code verification."""
     codes = recovery_code_manager.generate_recovery_codes()
     
-    assert recovery_code_manager.verify_recovery_code(codes[0], [])
+    assert recovery_code_manager.verify_recovery_code(codes[0], codes)
     assert not recovery_code_manager.verify_recovery_code("invalid", codes)
 
 

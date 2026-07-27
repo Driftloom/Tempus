@@ -1,6 +1,7 @@
 """Security tests for authentication."""
 
 import pytest
+from unittest.mock import patch
 from httpx import AsyncClient
 from app.main import app
 

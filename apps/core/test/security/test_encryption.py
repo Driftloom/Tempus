@@ -1,6 +1,7 @@
 """Security tests for encryption."""
 
 import pytest
+from unittest.mock import patch
 from app.security.encryption import EncryptionManager
 
 
@@ -100,13 +101,16 @@ def test_decryption_with_wrong_key():
         
         original_data = "sensitive_data"
         encrypted = encryption_manager.encrypt(original_data)
-        
-        # Change key
+    
+    # Create new manager with different key
+    with patch('app.security.encryption.settings') as mock_settings:
         mock_settings.encryption_key = "different_encryption_key_32_chars"
+        
+        wrong_key_manager = EncryptionManager()
         
         # Should fail to decrypt
         try:
-            decrypted = encryption_manager.decrypt(encrypted)
+            decrypted = wrong_key_manager.decrypt(encrypted)
             assert False, "Should have raised exception"
         except Exception:
             pass  # Expected

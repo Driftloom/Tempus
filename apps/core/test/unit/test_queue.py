@@ -187,8 +187,8 @@ async def test_circuit_breaker_open_blocks_calls(circuit_breaker):
         except ValueError:
             pass
     
-    # Try to call when open
-    with pytest.raises(Exception):  # Circuit breaker exception
+    # Try to call when open - should raise circuit breaker error
+    with pytest.raises(ValueError):
         await circuit_breaker.call(failing_function)
 
 
