@@ -166,11 +166,33 @@ make build        # Build Python and TypeScript
 
 ## Documentation
 
-- [Architecture Overview](docs/enterprise/architecture-overview.md)
-- [API Documentation](docs/enterprise/api-documentation.md)
-- [Security](docs/enterprise/threat-model.md)
-- [Monitoring](docs/enterprise/monitoring-observability.md)
-- [Deployment](docs/enterprise/devops-deployment.md)
+### Enterprise Documentation
+- [Executive Summary](docs/enterprise/executive-summary.md) - Product vision, business goals, strategy
+- [Architecture Overview](docs/enterprise/architecture-overview.md) - System architecture and principles
+- [API Documentation](docs/enterprise/api-documentation.md) - REST and WebSocket APIs
+- [Security Documentation](docs/enterprise/threat-model.md) - Threat model and security architecture
+- [Zero Trust Architecture](docs/enterprise/zero-trust-architecture.md) - Zero Trust implementation
+- [Monitoring & Observability](docs/enterprise/monitoring-observability.md) - Monitoring, logging, tracing
+- [Infrastructure](docs/enterprise/disaster-recovery.md) - DR, backup, capacity planning
+- [AI Architecture](docs/enterprise/ai-architecture.md) - LLM routing, multi-agent system
+- [Development](docs/enterprise/testing-strategy.md) - Testing, QA, release, versioning
+- [Operations](docs/enterprise/operational-runbooks.md) - Runbooks, playbooks, ADRs
+
+### Architecture Diagrams
+- [C4 Context Diagram](docs/enterprise/c4-context-diagram.md)
+- [C4 Container Diagram](docs/enterprise/c4-container-diagram.md)
+- [C4 Component Diagram](docs/enterprise/c4-component-diagram.md)
+- [C4 Deployment Diagram](docs/enterprise/c4-deployment-diagram.md)
+- [ER Diagrams](docs/enterprise/er-diagrams.md)
+- [Sequence Diagrams](docs/enterprise/sequence-diagrams.md)
+
+### Operational Documentation
+- [SLIs/SLOs/SLAs](docs/enterprise/sli-slo-sla.md) - Service level objectives
+- [Risk Register](docs/enterprise/risk-register.md) - Risk management
+- [Product Roadmap](docs/enterprise/product-roadmap.md) - Strategic roadmap
+- [Capacity Planning](docs/enterprise/capacity-planning.md) - Capacity requirements
+- [Migration Guide](docs/enterprise/migration-guide.md) - Upgrade procedures
+- [Quality Audit](docs/enterprise/quality-audit.md) - Implementation quality assessment
 
 ## License
 
