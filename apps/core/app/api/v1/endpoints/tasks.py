@@ -1,14 +1,31 @@
 """Task API endpoints."""
 
-from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database.models.task import TaskPriority, TaskStatus
 from app.database.session import get_db
 from app.tasks.service import TaskService
-from app.database.models.task import TaskStatus, TaskPriority
+from app.tasks.nlp.nl_parser import NLParser
+from app.tasks.priority.priority_scorer import PriorityScorer
+from app.tasks.scheduling.scheduler import Scheduler
+from app.database.repositories.task_repository import TaskRepository
+from app.auth.dependencies import get_current_user
+from app.auth.authorization import verify_user_owns_resource
 
 router = APIRouter()
+
+
+def get_task_service() -> TaskService:
+    """Dependency injection for TaskService."""
+    return TaskService(
+        task_repository=TaskRepository(),
+        nl_parser=NLParser(),
+        priority_scorer=PriorityScorer(),
+        scheduler=Scheduler()
+    )
 
 
 class TaskCreate(BaseModel):
@@ -44,51 +61,61 @@ class TaskResponse(BaseModel):
 async def create_task(
     task_data: TaskCreate,
     db: AsyncSession = Depends(get_db),
-    user_id: str = "default-user"  # Would come from auth
+    current_user: str = Depends(get_current_user),
+    task_service: TaskService = Depends(get_task_service)
 ):
-    """Create a new task from natural language input."""
-    # In production, would inject TaskService via dependency
-    task_service = TaskService(None, None, None, None)
     task = await task_service.create_from_nl(
         db,
-        user_id,
+        current_user,
         task_data.input,
         task_data.source
     )
     return TaskResponse.model_validate(task)
 
 
-@router.get("/tasks", response_model=List[TaskResponse])
+@router.get("/tasks", response_model=list[TaskResponse])
 async def list_tasks(
     status: TaskStatus | None = None,
     priority: TaskPriority | None = None,
     db: AsyncSession = Depends(get_db),
-    user_id: str = "default-user"
+    current_user: str = Depends(get_current_user),
+    task_service: TaskService = Depends(get_task_service)
 ):
-    """List tasks with optional filters."""
-    task_service = TaskService(None, None, None, None)
-    tasks = await task_service.get_tasks(db, user_id, status, priority)
+    tasks = await task_service.get_tasks(db, current_user, status, priority)
     return [TaskResponse.model_validate(t) for t in tasks]
 
 
 @router.get("/tasks/{task_id}", response_model=TaskResponse)
 async def get_task(
     task_id: str,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+    task_repository: TaskRepository = Depends(lambda: TaskRepository())
 ):
     """Get a specific task."""
-    # Implementation would fetch task by ID
-    raise HTTPException(status_code=501, detail="Not implemented")
+    # Verify ownership
+    if not await verify_user_owns_resource(db, current_user, "task", task_id):
+        raise HTTPException(status_code=403, detail="You do not have permission to view this task")
+    
+    task = await task_repository.get_by_id(db, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return TaskResponse.model_validate(task)
 
 
 @router.patch("/tasks/{task_id}", response_model=TaskResponse)
 async def update_task(
     task_id: str,
     task_data: TaskUpdate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    task_service: TaskService = Depends(get_task_service),
+    current_user: str = Depends(get_current_user)
 ):
     """Update a task."""
-    task_service = TaskService(None, None, None, None)
+    # Verify ownership
+    if not await verify_user_owns_resource(db, current_user, "task", task_id):
+        raise HTTPException(status_code=403, detail="You do not have permission to modify this task")
+    
     updates = task_data.model_dump(exclude_unset=True)
     task = await task_service.update_task(db, task_id, updates)
     if not task:
@@ -99,10 +126,15 @@ async def update_task(
 @router.post("/tasks/{task_id}/complete", response_model=TaskResponse)
 async def complete_task(
     task_id: str,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    task_service: TaskService = Depends(get_task_service),
+    current_user: str = Depends(get_current_user)
 ):
     """Mark a task as completed."""
-    task_service = TaskService(None, None, None, None)
+    # Verify ownership
+    if not await verify_user_owns_resource(db, current_user, "task", task_id):
+        raise HTTPException(status_code=403, detail="You do not have permission to modify this task")
+    
     task = await task_service.complete_task(db, task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
