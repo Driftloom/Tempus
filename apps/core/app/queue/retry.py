@@ -1,8 +1,10 @@
 """Retry mechanism with exponential backoff."""
 
 import asyncio
-from typing import Callable, TypeVar, Optional
+from collections.abc import Callable
 from functools import wraps
+from typing import TypeVar
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -20,7 +22,7 @@ class RetryConfig:
         max_delay: float = 60.0,
         exponential_base: float = 2.0,
         jitter: bool = True
-    ):
+    ) -> None:
         """Initialize retry configuration."""
         self.max_attempts = max_attempts
         self.base_delay = base_delay
@@ -64,13 +66,13 @@ class RetryPolicy:
 async def retry_with_backoff(
     func: Callable[..., T],
     config: RetryConfig = RetryPolicy.DEFAULT,
-    on_retry: Optional[Callable[[Exception, int], None]] = None,
+    on_retry: Callable[[Exception, int], None] | None = None,
     *args,
     **kwargs
 ) -> T:
     """Execute function with exponential backoff retry."""
     last_exception = None
-    
+
     for attempt in range(config.max_attempts):
         try:
             return await func(*args, **kwargs)
@@ -82,15 +84,15 @@ async def retry_with_backoff(
                 max_attempts=config.max_attempts,
                 error=str(e)
             )
-            
+
             if on_retry:
                 on_retry(e, attempt + 1)
-            
+
             # Don't wait after last attempt
             if attempt < config.max_attempts - 1:
                 delay = _calculate_delay(attempt, config)
                 await asyncio.sleep(delay)
-    
+
     raise last_exception
 
 
@@ -98,20 +100,20 @@ def _calculate_delay(attempt: int, config: RetryConfig) -> float:
     """Calculate delay with exponential backoff and jitter."""
     delay = config.base_delay * (config.exponential_base ** attempt)
     delay = min(delay, config.max_delay)
-    
+
     if config.jitter:
         import random
         delay = delay * (0.5 + random.random() * 0.5)
-    
+
     return delay
 
 
-def retry_decorator(config: RetryConfig = RetryPolicy.DEFAULT):
+def retry_decorator(config: RetryConfig = RetryPolicy.DEFAULT) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """Decorator for retry with backoff."""
-    
-    def decorator(func: Callable[..., T]):
+
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> T:
             return await retry_with_backoff(func, config, None, *args, **kwargs)
         return wrapper
     return decorator
@@ -120,14 +122,14 @@ def retry_decorator(config: RetryConfig = RetryPolicy.DEFAULT):
 def retry_on_exception(
     exception_types: tuple[type[Exception], ...],
     config: RetryConfig = RetryPolicy.DEFAULT
-):
+) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """Decorator to retry on specific exceptions."""
-    
-    def decorator(func: Callable[..., T]):
+
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> T:
             last_exception = None
-            
+
             for attempt in range(config.max_attempts):
                 try:
                     return await func(*args, **kwargs)
@@ -139,15 +141,15 @@ def retry_on_exception(
                         max_attempts=config.max_attempts,
                         error=str(e)
                     )
-                    
+
                     if attempt < config.max_attempts - 1:
                         delay = _calculate_delay(attempt, config)
                         await asyncio.sleep(delay)
-                except Exception as e:
+                except Exception:
                     # Re-raise unexpected exceptions
                     raise
-            
+
             raise last_exception
-        
+
         return wrapper
     return decorator

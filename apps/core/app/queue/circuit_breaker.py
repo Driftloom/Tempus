@@ -1,9 +1,12 @@
 """Circuit breaker pattern for fault tolerance."""
 
 import asyncio
+from collections.abc import Callable
+from datetime import datetime
 from enum import Enum
-from typing import Callable, TypeVar, Optional
-from datetime import datetime, timedelta
+from functools import wraps
+from typing import TypeVar
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -27,7 +30,7 @@ class CircuitBreakerConfig:
         success_threshold: int = 2,
         timeout: float = 60.0,
         expected_exception: tuple[type[Exception], ...] = (Exception,)
-    ):
+    ) -> None:
         """Initialize circuit breaker configuration."""
         self.failure_threshold = failure_threshold
         self.success_threshold = success_threshold
@@ -38,13 +41,13 @@ class CircuitBreakerConfig:
 class CircuitBreaker:
     """Circuit breaker implementation."""
 
-    def __init__(self, config: CircuitBreakerConfig):
+    def __init__(self, config: CircuitBreakerConfig) -> None:
         """Initialize circuit breaker."""
         self.config = config
         self.state = CircuitState.CLOSED
         self.failure_count = 0
         self.success_count = 0
-        self.last_failure_time: Optional[datetime] = None
+        self.last_failure_time: datetime | None = None
         self._lock = asyncio.Lock()
 
     async def call(self, func: Callable[..., T], *args, **kwargs) -> T:
@@ -59,7 +62,7 @@ class CircuitBreaker:
 
         try:
             result = await func(*args, **kwargs)
-            
+
             async with self._lock:
                 if self.state == CircuitState.HALF_OPEN:
                     self.success_count += 1
@@ -70,14 +73,14 @@ class CircuitBreaker:
                         logger.info("Circuit breaker reset to CLOSED")
                 elif self.state == CircuitState.CLOSED:
                     self.failure_count = 0
-            
+
             return result
-        
-        except self.config.expected_exception as e:
+
+        except self.config.expected_exception:
             async with self._lock:
                 self.failure_count += 1
                 self.last_failure_time = datetime.utcnow()
-                
+
                 if self.failure_count >= self.config.failure_threshold:
                     self.state = CircuitState.OPEN
                     logger.error(
@@ -85,14 +88,14 @@ class CircuitBreaker:
                         failure_count=self.failure_count,
                         threshold=self.config.failure_threshold
                     )
-            
+
             raise
 
     def _should_attempt_reset(self) -> bool:
         """Check if circuit breaker should attempt reset."""
         if self.last_failure_time is None:
             return True
-        
+
         time_since_failure = datetime.utcnow() - self.last_failure_time
         return time_since_failure.total_seconds() >= self.config.timeout
 
@@ -135,7 +138,7 @@ conservative_circuit_breaker = CircuitBreaker(
 
 def circuit_breaker_decorator(circuit_breaker: CircuitBreaker = default_circuit_breaker):
     """Decorator for circuit breaker protection."""
-    
+
     def decorator(func: Callable[..., T]):
         @wraps(func)
         async def wrapper(*args, **kwargs):
