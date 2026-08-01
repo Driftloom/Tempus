@@ -118,3 +118,10 @@ dmypy.json
 # IDE specific
 .vscode/settings.json
 .idea/workspace.xml
+
+# Kubernetes secrets (keep template, ignore actual secrets)
+deploy/k8s/secrets.yaml
+
+# Local development
+*.local
+.local
