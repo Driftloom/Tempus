@@ -1,7 +1,8 @@
 """Prompt engineering templates and utilities."""
 
-from typing import Dict, Any, List, Optional
 from enum import Enum
+from typing import Any
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -129,7 +130,7 @@ class PromptBuilder:
     def build(
         self,
         template: PromptTemplate,
-        variables: Dict[str, Any]
+        variables: dict[str, Any]
     ) -> str:
         """Build prompt from template."""
         template_str = self.templates[template]
@@ -154,7 +155,7 @@ class PromptOptimizer:
     """Optimize prompts for better performance."""
 
     @staticmethod
-    def add_few_shot_examples(prompt: str, examples: List[Dict[str, str]]) -> str:
+    def add_few_shot_examples(prompt: str, examples: list[dict[str, str]]) -> str:
         """Add few-shot examples to prompt."""
         examples_str = "\n".join(
             f"Example {i+1}:\nInput: {ex['input']}\nOutput: {ex['output']}\n"
@@ -173,7 +174,7 @@ class PromptOptimizer:
         return f"Context: {context}\n\n{prompt}"
 
     @staticmethod
-    def add_constraints(prompt: str, constraints: List[str]) -> str:
+    def add_constraints(prompt: str, constraints: list[str]) -> str:
         """Add constraints to prompt."""
         constraints_str = "\n".join(f"- {c}" for c in constraints)
         return f"{prompt}\n\nConstraints:\n{constraints_str}"

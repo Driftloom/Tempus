@@ -2,8 +2,10 @@
 
 from datetime import datetime
 from enum import Enum
-from sqlalchemy import DateTime, String, Text, Integer, ForeignKey
+
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.database.session import Base
 
 
@@ -25,9 +27,9 @@ class TaskPriority(str, Enum):
 
 class Task(Base):
     """Task model representing a user task."""
-    
+
     __tablename__ = "tasks"
-    
+
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
@@ -43,10 +45,10 @@ class Task(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
     completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
-    
+
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="tasks")
     time_blocks: Mapped[list["TimeBlock"]] = relationship("TimeBlock", back_populates="task", cascade="all, delete-orphan")
-    
+
     def __repr__(self) -> str:
         return f"<Task(id={self.id}, title={self.title}, status={self.status})>"

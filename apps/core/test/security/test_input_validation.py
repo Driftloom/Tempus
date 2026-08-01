@@ -2,6 +2,7 @@
 
 import pytest
 from httpx import AsyncClient
+
 from app.main import app
 
 
@@ -14,13 +15,13 @@ async def test_sql_injection_prevention():
             "title": "'; DROP TABLE users; --",
             "description": "Test"
         }
-        
+
         response = await client.post(
             "/tasks",
             json=malicious_input,
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         # Should either reject or handle safely
         assert response.status_code in [400, 401, 422]
 
@@ -34,16 +35,16 @@ async def test_xss_prevention():
             "title": "<script>alert('XSS')</script>",
             "description": "Test"
         }
-        
+
         response = await client.post(
             "/tasks",
             json=malicious_input,
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         # Should either reject or sanitize
         assert response.status_code in [400, 401, 422, 200]
-        
+
         if response.status_code == 200:
             # Check if script tag was escaped
             data = response.json()
@@ -59,13 +60,13 @@ async def test_command_injection_prevention():
             "title": "test; rm -rf /",
             "description": "Test"
         }
-        
+
         response = await client.post(
             "/tasks",
             json=malicious_input,
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         # Should either reject or handle safely
         assert response.status_code in [400, 401, 422]
 
@@ -76,7 +77,7 @@ async def test_path_traversal_prevention():
     async with AsyncClient(app=app, base_url="http://test") as client:
         # Path traversal attempt
         response = await client.get("/files/../../../etc/passwd")
-        
+
         assert response.status_code in [400, 403, 404]
 
 
@@ -89,13 +90,13 @@ async def test_large_payload_rejection():
             "title": "A" * 10000,
             "description": "B" * 100000
         }
-        
+
         response = await client.post(
             "/tasks",
             json=large_data,
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         # Should reject large payloads
         assert response.status_code in [400, 413, 422]
 
@@ -110,7 +111,7 @@ async def test_malformed_json():
             data="{invalid json}",
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         assert response.status_code in [400, 422]
 
 
@@ -124,7 +125,7 @@ async def test_content_type_validation():
             data="title=test",
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         assert response.status_code in [400, 415, 422]
 
 
@@ -138,9 +139,9 @@ async def test_email_validation():
             "password": "TestPassword123!",
             "name": "Test User"
         }
-        
+
         response = await client.post("/auth/register", json=invalid_data)
-        
+
         assert response.status_code in [400, 422]
 
 
@@ -153,12 +154,12 @@ async def test_special_characters_handling():
             "title": "Test with special chars: <>&\"'",
             "description": "Test"
         }
-        
+
         response = await client.post(
             "/tasks",
             json=special_data,
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         # Should handle safely
         assert response.status_code in [200, 400, 401, 422]

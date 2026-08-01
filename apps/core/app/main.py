@@ -1,12 +1,14 @@
 """TEMPUS Core FastAPI application."""
 
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from structlog import get_logger
 
 from app.api.health import router as health_router
 from app.api.v1.endpoints.router import api_router
+from app.middleware.rate_limit import rate_limiter
 from app.realtime.websocket import websocket_endpoint
 
 logger = get_logger(__name__)
@@ -27,12 +29,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware
+# CORS middleware - configured via environment variables
+import os
+
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
+if not allowed_origins or allowed_origins == [""]:
+    # Development fallback
+    allowed_origins = ["http://localhost:3000", "http://localhost:8000"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["chrome-extension://*", "vscode-webview://*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 

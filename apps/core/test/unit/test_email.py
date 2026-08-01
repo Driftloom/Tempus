@@ -1,9 +1,10 @@
 """Unit tests for email module."""
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import AsyncMock
-from app.email.processor import EmailProcessor
 from app.email.models import EmailMessage, EmailMetadata
+from app.email.processor import EmailProcessor
 
 
 @pytest.fixture
@@ -33,7 +34,7 @@ async def test_email_processor_process(email_processor, email_message):
     with patch.object(email_processor, '_extract_tasks', return_value=[{"title": "Meeting at 3PM"}]):
         with patch.object(email_processor, '_extract_deadlines', return_value=["2024-01-02T15:00:00Z"]):
             result = await email_processor.process(email_message)
-            
+
             assert "tasks" in result
             assert len(result["tasks"]) >= 1
 
@@ -42,9 +43,9 @@ async def test_email_processor_process(email_processor, email_message):
 async def test_email_processor_extract_tasks(email_processor):
     """Test task extraction from email."""
     email_text = "You need to: 1) Finish the report, 2) Call the client, 3) Send the invoice"
-    
+
     tasks = email_processor._extract_tasks(email_text)
-    
+
     assert len(tasks) >= 2
 
 
@@ -52,9 +53,9 @@ async def test_email_processor_extract_tasks(email_processor):
 async def test_email_processor_extract_deadlines(email_processor):
     """Test deadline extraction from email."""
     email_text = "The project is due next Friday and the meeting is tomorrow at 3PM"
-    
+
     deadlines = email_processor._extract_deadlines(email_text)
-    
+
     assert len(deadlines) >= 1
 
 
@@ -62,9 +63,9 @@ async def test_email_processor_extract_deadlines(email_processor):
 async def test_email_processor_extract_commitments(email_processor):
     """Test commitment extraction from email."""
     email_text = "I promise to deliver the report by Friday and I'll call you tomorrow"
-    
+
     commitments = email_processor._extract_commitments(email_text)
-    
+
     assert len(commitments) >= 1
 
 
@@ -78,9 +79,9 @@ async def test_email_processor_prioritize(email_processor):
         body="Production server is down",
         sender="alerts@example.com"
     )
-    
+
     priority = email_processor.prioritize(urgent_email)
-    
+
     assert priority == "high"
 
 
@@ -94,9 +95,9 @@ async def test_email_processor_classify(email_processor):
         body="Here is the project status",
         sender="manager@example.com"
     )
-    
+
     classification = email_processor.classify(work_email)
-    
+
     assert classification in ["work", "personal", "promotional", "social"]
 
 
@@ -117,7 +118,7 @@ def test_email_metadata_initialization():
         has_deadline=True,
         has_commitment=True
     )
-    
+
     assert metadata.email_id == "email1"
     assert metadata.priority == "high"
     assert metadata.has_deadline is True
@@ -132,7 +133,7 @@ def test_email_message_with_attachments():
         body="Please find the report attached",
         attachments=["report.pdf", "data.xlsx"]
     )
-    
+
     assert len(email.attachments) == 2
     assert "report.pdf" in email.attachments
 
@@ -146,5 +147,5 @@ def test_email_message_thread_id():
         body="Thanks for the update",
         thread_id="thread123"
     )
-    
+
     assert email.thread_id == "thread123"

@@ -1,8 +1,8 @@
 """Secret rotation and management."""
 
-from typing import Dict, Optional
-from datetime import datetime, timedelta
 import secrets
+from datetime import datetime, timedelta
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -11,9 +11,9 @@ logger = structlog.get_logger(__name__)
 class SecretManager:
     """Manager for secret operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize secret manager."""
-        self.secrets: Dict[str, Dict] = {}
+        self.secrets: dict[str, dict] = {}
 
     def generate_secret(self, length: int = 32) -> str:
         """Generate cryptographically secure random secret."""
@@ -38,7 +38,7 @@ class SecretManager:
         }
         logger.info("Secret stored", key=key, rotation_days=rotation_days)
 
-    def get_secret(self, key: str) -> Optional[str]:
+    def get_secret(self, key: str) -> str | None:
         """Get secret by key."""
         secret_data = self.secrets.get(key)
         if secret_data:
@@ -49,17 +49,17 @@ class SecretManager:
         """Rotate secret."""
         if key not in self.secrets:
             raise ValueError(f"Secret {key} not found")
-        
+
         old_secret_data = self.secrets[key]
         new_secret = self.generate_api_secret()
-        
+
         self.secrets[key] = {
             "secret": new_secret,
             "created_at": datetime.utcnow(),
             "rotation_days": old_secret_data["rotation_days"],
             "next_rotation": datetime.utcnow() + timedelta(days=old_secret_data["rotation_days"]),
         }
-        
+
         logger.info("Secret rotated", key=key)
         return new_secret
 
@@ -68,17 +68,17 @@ class SecretManager:
         secret_data = self.secrets.get(key)
         if not secret_data:
             return False
-        
+
         return datetime.utcnow() >= secret_data["next_rotation"]
 
-    def get_rotation_status(self, key: str) -> Dict:
+    def get_rotation_status(self, key: str) -> dict:
         """Get rotation status for secret."""
         secret_data = self.secrets.get(key)
         if not secret_data:
             return {"exists": False}
-        
+
         days_until_rotation = (secret_data["next_rotation"] - datetime.utcnow()).days
-        
+
         return {
             "exists": True,
             "created_at": secret_data["created_at"].isoformat(),
@@ -95,10 +95,10 @@ class KeyRotationScheduler:
         """Initialize rotation scheduler."""
         self.secret_manager = secret_manager
 
-    async def check_and_rotate_all(self) -> Dict[str, bool]:
+    async def check_and_rotate_all(self) -> dict[str, bool]:
         """Check and rotate all secrets that need rotation."""
         results = {}
-        
+
         for key in self.secret_manager.secrets.keys():
             if self.secret_manager.check_rotation_needed(key):
                 try:
@@ -109,7 +109,7 @@ class KeyRotationScheduler:
                     results[key] = False
             else:
                 results[key] = False
-        
+
         return results
 
     async def rotate_specific(self, key: str) -> bool:

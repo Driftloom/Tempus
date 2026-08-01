@@ -1,7 +1,9 @@
 """Unit tests for workers module."""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch
+
 from app.workers.celery_app import celery_app
 from app.workers.tasks.agent_tasks import process_agent_task
 from app.workers.tasks.email_tasks import process_email_task
@@ -44,14 +46,14 @@ async def test_process_agent_task():
         "user_id": "user123",
         "goal": "Test goal",
     }
-    
+
     with patch('app.workers.tasks.agent_tasks.AgentBase') as mock_agent:
         mock_agent_instance = MagicMock()
         mock_agent_instance.execute = AsyncMock(return_value={"result": "success"})
         mock_agent.return_value = mock_agent_instance
-        
+
         result = await process_agent_task(task_data)
-        
+
         assert result is not None
 
 
@@ -63,12 +65,12 @@ async def test_process_agent_task_with_error():
         "user_id": "user123",
         "goal": "Test goal",
     }
-    
+
     with patch('app.workers.tasks.agent_tasks.AgentBase') as mock_agent:
         mock_agent_instance = MagicMock()
         mock_agent_instance.execute = AsyncMock(side_effect=Exception("Test error"))
         mock_agent.return_value = mock_agent_instance
-        
+
         with pytest.raises(Exception):
             await process_agent_task(task_data)
 
@@ -83,14 +85,14 @@ async def test_process_email_task():
         "subject": "Test email",
         "body": "Test body",
     }
-    
+
     with patch('app.workers.tasks.email_tasks.EmailProcessor') as mock_processor:
         mock_processor_instance = MagicMock()
         mock_processor_instance.process = AsyncMock(return_value={"tasks": ["task1"]})
         mock_processor.return_value = mock_processor_instance
-        
+
         result = await process_email_task(task_data)
-        
+
         assert result is not None
 
 
@@ -103,14 +105,14 @@ async def test_process_email_task_extraction():
         "subject": "Meeting tomorrow at 3PM",
         "body": "Don't forget the meeting",
     }
-    
+
     with patch('app.workers.tasks.email_tasks.EmailProcessor') as mock_processor:
         mock_processor_instance = MagicMock()
         mock_processor_instance.process = AsyncMock(return_value={"tasks": [{"title": "Meeting at 3PM"}]})
         mock_processor.return_value = mock_processor_instance
-        
+
         result = await process_email_task(task_data)
-        
+
         assert "tasks" in result
 
 
@@ -123,14 +125,14 @@ async def test_process_memory_task():
         "user_id": "user123",
         "content": "Test memory content",
     }
-    
+
     with patch('app.workers.tasks.memory_tasks.MemoryService') as mock_service:
         mock_service_instance = MagicMock()
         mock_service_instance.process_memory = AsyncMock(return_value={"embedding": [0.1, 0.2, 0.3]})
         mock_service.return_value = mock_service_instance
-        
+
         result = await process_memory_task(task_data)
-        
+
         assert result is not None
 
 
@@ -142,14 +144,14 @@ async def test_process_memory_task_embedding():
         "user_id": "user123",
         "content": "Test memory content",
     }
-    
+
     with patch('app.workers.tasks.memory_tasks.MemoryService') as mock_service:
         mock_service_instance = MagicMock()
         mock_service_instance.process_memory = AsyncMock(return_value={"embedding": [0.1, 0.2, 0.3]})
         mock_service.return_value = mock_service_instance
-        
+
         result = await process_memory_task(task_data)
-        
+
         assert "embedding" in result
 
 
@@ -162,14 +164,14 @@ async def test_send_notification_task():
         "type": "task_reminder",
         "message": "Task due in 1 hour",
     }
-    
+
     with patch('app.workers.tasks.notification_tasks.NotificationService') as mock_service:
         mock_service_instance = MagicMock()
         mock_service_instance.send = AsyncMock(return_value={"sent": True})
         mock_service.return_value = mock_service_instance
-        
+
         result = await send_notification_task(task_data)
-        
+
         assert result.get("sent") is True
 
 
@@ -182,12 +184,12 @@ async def test_send_notification_task_with_channels():
         "message": "Task due in 1 hour",
         "channels": ["email", "push"],
     }
-    
+
     with patch('app.workers.tasks.notification_tasks.NotificationService') as mock_service:
         mock_service_instance = MagicMock()
         mock_service_instance.send = AsyncMock(return_value={"sent": True, "channels": ["email", "push"]})
         mock_service.return_value = mock_service_instance
-        
+
         result = await send_notification_task(task_data)
-        
+
         assert "channels" in result

@@ -1,14 +1,29 @@
 """Memory API endpoints."""
 
-from typing import List
+
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database.models.memory import MemoryLayer, MemorySensitivity
 from app.database.session import get_db
 from app.memory.service import MemoryService
-from app.database.models.memory import MemoryLayer, MemorySensitivity
+from app.memory.engine.memory_engine import MemoryEngine
+from app.memory.classification.sensitivity_classifier import SensitivityClassifier
+from app.memory.classification.layer_classifier import LayerClassifier
+from app.auth.dependencies import get_current_user
 
 router = APIRouter()
+
+
+def get_memory_service() -> MemoryService:
+    """Dependency injection for MemoryService."""
+    return MemoryService(
+        memory_engine=MemoryEngine(),
+        sensitivity_classifier=SensitivityClassifier(),
+        layer_classifier=LayerClassifier(),
+        embedding_service=None  # TODO: Add embedding service
+    )
 
 
 class MemoryIngest(BaseModel):
@@ -16,7 +31,7 @@ class MemoryIngest(BaseModel):
     content: str
     source: str = "user_direct"
     source_ref: str | None = None
-    tags: List[str] | None = None
+    tags: list[str] | None = None
 
 
 class MemoryQuery(BaseModel):
@@ -44,13 +59,12 @@ class MemoryResponse(BaseModel):
 async def ingest_memory(
     memory_data: MemoryIngest,
     db: AsyncSession = Depends(get_db),
-    user_id: str = "default-user"
+    current_user: str = Depends(get_current_user),
+    memory_service: MemoryService = Depends(get_memory_service)
 ):
-    """Ingest content into memory."""
-    memory_service = MemoryService(None, None, None, None)
     memory = await memory_service.ingest(
         db,
-        user_id,
+        current_user,
         memory_data.content,
         memory_data.source,
         memory_data.source_ref,
@@ -59,17 +73,16 @@ async def ingest_memory(
     return MemoryResponse.model_validate(memory)
 
 
-@router.post("/memory/query", response_model=List[MemoryResponse])
+@router.post("/memory/query", response_model=list[MemoryResponse])
 async def query_memory(
     query_data: MemoryQuery,
     db: AsyncSession = Depends(get_db),
-    user_id: str = "default-user"
+    current_user: str = Depends(get_current_user),
+    memory_service: MemoryService = Depends(get_memory_service)
 ):
-    """Query memory for relevant information."""
-    memory_service = MemoryService(None, None, None, None)
     results = await memory_service.query(
         db,
-        user_id,
+        current_user,
         query_data.query,
         query_data.layer,
         query_data.sensitivity,
@@ -81,9 +94,8 @@ async def query_memory(
 @router.delete("/memory/{memory_id}")
 async def forget_memory(
     memory_id: str,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    memory_service: MemoryService = Depends(get_memory_service)
 ):
-    """Forget a specific memory item."""
-    memory_service = MemoryService(None, None, None, None)
     deleted = await memory_service.forget(db, memory_id)
     return {"deleted": deleted}

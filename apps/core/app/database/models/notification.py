@@ -2,8 +2,10 @@
 
 from datetime import datetime
 from enum import Enum
+
 from sqlalchemy import DateTime, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
+
 from app.database.session import Base
 
 
@@ -26,9 +28,9 @@ class NotificationStatus(str, Enum):
 
 class Notification(Base):
     """Notification model representing user notifications."""
-    
+
     __tablename__ = "notifications"
-    
+
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
     notification_type: Mapped[NotificationType] = mapped_column(String(50), nullable=False)
@@ -41,6 +43,6 @@ class Notification(Base):
     related_task_id: Mapped[str] = mapped_column(String(36), nullable=True)
     related_memory_id: Mapped[str] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
-    
+
     def __repr__(self) -> str:
         return f"<Notification(id={self.id}, type={self.notification_type}, status={self.status})>"

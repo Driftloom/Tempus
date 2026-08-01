@@ -1,9 +1,11 @@
 """LLM router using LiteLLM for multi-provider support."""
 
-from typing import Optional, Dict, Any, List
-from litellm import acompletion, get_supported_models
-from app.core.config import settings
+from typing import Any
+
 import structlog
+from litellm import acompletion
+
+from app.core.config import settings
 
 logger = structlog.get_logger(__name__)
 
@@ -31,16 +33,16 @@ class LLMRouter:
 
     async def complete(
         self,
-        messages: List[Dict[str, str]],
-        model: Optional[str] = None,
-        provider: Optional[str] = None,
+        messages: list[dict[str, str]],
+        model: str | None = None,
+        provider: str | None = None,
         temperature: float = 0.7,
         max_tokens: int = 1000,
         **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Complete a chat completion request."""
         selected_model, selected_provider = self._select_model(model, provider)
-        
+
         try:
             response = await acompletion(
                 model=selected_model,
@@ -49,16 +51,16 @@ class LLMRouter:
                 max_tokens=max_tokens,
                 **kwargs
             )
-            
+
             logger.info(
                 "LLM completion successful",
                 model=selected_model,
                 provider=selected_provider,
                 tokens=response.get("usage", {}).get("total_tokens"),
             )
-            
+
             return response
-        
+
         except Exception as e:
             logger.error("LLM completion failed", model=selected_model, error=str(e))
             # Fallback to backup provider
@@ -66,11 +68,11 @@ class LLMRouter:
 
     async def _fallback_completion(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         failed_provider: str,
         temperature: float,
         max_tokens: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Fallback to backup provider on failure."""
         for provider_name, provider_config in self.providers.items():
             if provider_name != failed_provider and provider_config.get("api_key"):
@@ -86,20 +88,20 @@ class LLMRouter:
                     return response
                 except Exception as e:
                     logger.warning("Fallback failed", provider=provider_name, error=str(e))
-        
+
         raise Exception("All LLM providers failed")
 
-    def _select_model(self, model: Optional[str], provider: Optional[str]) -> tuple[str, str]:
+    def _select_model(self, model: str | None, provider: str | None) -> tuple[str, str]:
         """Select model based on routing policy."""
         if model and provider:
             return model, provider
-        
+
         if model:
             # Find provider for model
             for provider_name, provider_config in self.providers.items():
                 if model in provider_config["models"]:
                     return model, provider_name
-        
+
         # Select based on routing policy
         if self.routing_policy == "cost_optimized":
             return self._select_cost_optimized()
@@ -126,7 +128,7 @@ class LLMRouter:
             return "llama2", "ollama"
         return "claude-3-haiku-20240307", "anthropic"
 
-    def get_available_models(self) -> List[str]:
+    def get_available_models(self) -> list[str]:
         """Get all available models."""
         models = []
         for provider_config in self.providers.values():

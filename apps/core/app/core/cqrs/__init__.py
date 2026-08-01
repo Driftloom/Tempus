@@ -1,7 +1,7 @@
 """CQRS pattern implementation."""
 
-from app.core.cqrs.base import Command, Query, CommandHandler, QueryHandler
-from app.core.cqrs.bus import command_bus, query_bus, CommandBus, QueryBus
+from app.core.cqrs.base import Command, CommandHandler, Query, QueryHandler
+from app.core.cqrs.bus import CommandBus, QueryBus, command_bus, query_bus
 
 __all__ = [
     "Command",

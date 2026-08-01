@@ -1,16 +1,16 @@
 """Event definitions."""
 
-from app.core.events.events.task_events import (
-    TaskCreatedEvent,
-    TaskUpdatedEvent,
-    TaskDeletedEvent,
-    TaskCompletedEvent,
-)
 from app.core.events.events.memory_events import (
-    MemoryCreatedEvent,
-    MemoryUpdatedEvent,
-    MemoryDeletedEvent,
     MemoryConsolidatedEvent,
+    MemoryCreatedEvent,
+    MemoryDeletedEvent,
+    MemoryUpdatedEvent,
+)
+from app.core.events.events.task_events import (
+    TaskCompletedEvent,
+    TaskCreatedEvent,
+    TaskDeletedEvent,
+    TaskUpdatedEvent,
 )
 from app.core.events.events.user_events import (
     UserCreatedEvent,

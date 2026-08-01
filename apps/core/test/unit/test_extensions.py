@@ -1,9 +1,11 @@
 """Unit tests for extensions module."""
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
-from app.extensions.sdk import TEMPUSClient, BaseExtension
+
 from app.extensions.plugin import PluginManager, PluginValidator
+from app.extensions.sdk import BaseExtension, TEMPUSClient
 from app.extensions.webhooks import WebhookHandler, WebhookValidator
 
 
@@ -49,9 +51,9 @@ async def test_tempus_client_create_task(tempus_client):
     """Test task creation via client."""
     with patch.object(tempus_client, '_request', new_callable=AsyncMock) as mock_request:
         mock_request.return_value = {"id": "task1", "title": "Test Task"}
-        
+
         result = await tempus_client.create_task({"title": "Test Task"})
-        
+
         assert result["id"] == "task1"
         mock_request.assert_called_once()
 
@@ -61,9 +63,9 @@ async def test_tempus_client_get_memory(tempus_client):
     """Test memory retrieval via client."""
     with patch.object(tempus_client, '_request', new_callable=AsyncMock) as mock_request:
         mock_request.return_value = {"id": "mem1", "content": "Test memory"}
-        
+
         result = await tempus_client.get_memory("mem1")
-        
+
         assert result["id"] == "mem1"
         mock_request.assert_called_once()
 
@@ -72,7 +74,7 @@ async def test_tempus_client_get_memory(tempus_client):
 def test_base_extension_initialization():
     """Test base extension initialization."""
     extension = BaseExtension(name="test_extension", version="1.0.0")
-    
+
     assert extension.name == "test_extension"
     assert extension.version == "1.0.0"
 
@@ -81,9 +83,9 @@ def test_base_extension_initialization():
 async def test_base_extension_on_load():
     """Test extension on_load lifecycle."""
     extension = BaseExtension(name="test_extension", version="1.0.0")
-    
+
     await extension.on_load()
-    
+
     # Should not raise exception
     assert True
 
@@ -92,9 +94,9 @@ async def test_base_extension_on_load():
 async def test_base_extension_on_unload():
     """Test extension on_unload lifecycle."""
     extension = BaseExtension(name="test_extension", version="1.0.0")
-    
+
     await extension.on_unload()
-    
+
     # Should not raise exception
     assert True
 
@@ -110,10 +112,10 @@ def test_plugin_manager_initialization(plugin_manager):
 async def test_plugin_manager_load_plugin(plugin_manager):
     """Test plugin loading."""
     plugin = BaseExtension(name="test_plugin", version="1.0.0")
-    
+
     with patch.object(plugin, 'on_load', new_callable=AsyncMock):
         await plugin_manager.load_plugin(plugin)
-    
+
     assert "test_plugin" in plugin_manager.loaded_plugins
 
 
@@ -121,12 +123,12 @@ async def test_plugin_manager_load_plugin(plugin_manager):
 async def test_plugin_manager_unload_plugin(plugin_manager):
     """Test plugin unloading."""
     plugin = BaseExtension(name="test_plugin", version="1.0.0")
-    
+
     with patch.object(plugin, 'on_load', new_callable=AsyncMock):
         with patch.object(plugin, 'on_unload', new_callable=AsyncMock):
             await plugin_manager.load_plugin(plugin)
             await plugin_manager.unload_plugin("test_plugin")
-    
+
     assert "test_plugin" not in plugin_manager.loaded_plugins
 
 
@@ -139,9 +141,9 @@ def test_plugin_validator_validate_metadata(plugin_validator):
         "description": "Test plugin",
         "author": "Test Author",
     }
-    
+
     result = plugin_validator.validate_metadata(metadata)
-    
+
     assert result is True
 
 
@@ -151,27 +153,27 @@ def test_plugin_validator_validate_invalid_metadata(plugin_validator):
         "name": "",  # Invalid empty name
         "version": "1.0.0",
     }
-    
+
     result = plugin_validator.validate_metadata(metadata)
-    
+
     assert result is False
 
 
 def test_plugin_validator_validate_permissions(plugin_validator):
     """Test plugin permissions validation."""
     permissions = ["read:tasks", "write:tasks"]
-    
+
     result = plugin_validator.validate_permissions(permissions)
-    
+
     assert result is True
 
 
 def test_plugin_validator_validate_invalid_permissions(plugin_validator):
     """Test invalid plugin permissions validation."""
     permissions = ["admin:delete_all"]  # Invalid permission
-    
+
     result = plugin_validator.validate_permissions(permissions)
-    
+
     assert result is False
 
 
@@ -180,9 +182,9 @@ def test_webhook_handler_register(webhook_handler):
     """Test webhook registration."""
     async def handler(event):
         return {"status": "ok"}
-    
+
     webhook_handler.register("test_event", handler)
-    
+
     assert "test_event" in webhook_handler.handlers
 
 
@@ -190,13 +192,13 @@ def test_webhook_handler_register(webhook_handler):
 async def test_webhook_handler_broadcast(webhook_handler):
     """Test webhook broadcasting."""
     received_events = []
-    
+
     async def handler(event):
         received_events.append(event)
-    
+
     webhook_handler.register("test_event", handler)
     await webhook_handler.broadcast("test_event", {"data": "test"})
-    
+
     assert len(received_events) == 1
 
 
@@ -208,9 +210,9 @@ def test_webhook_validator_validate_payload(webhook_validator):
         "data": {"task_id": "123"},
         "timestamp": "2024-01-01T00:00:00Z",
     }
-    
+
     result = webhook_validator.validate_payload(payload)
-    
+
     assert result is True
 
 
@@ -220,25 +222,25 @@ def test_webhook_validator_validate_invalid_payload(webhook_validator):
         "event_type": "",  # Invalid empty event type
         "data": {},
     }
-    
+
     result = webhook_validator.validate_payload(payload)
-    
+
     assert result is False
 
 
 def test_webhook_validator_validate_url(webhook_validator):
     """Test webhook URL validation."""
     url = "https://example.com/webhook"
-    
+
     result = webhook_validator.validate_url(url)
-    
+
     assert result is True
 
 
 def test_webhook_validator_validate_invalid_url(webhook_validator):
     """Test invalid webhook URL validation."""
     url = "not-a-url"
-    
+
     result = webhook_validator.validate_url(url)
-    
+
     assert result is False

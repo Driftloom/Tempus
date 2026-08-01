@@ -1,7 +1,7 @@
 """PII redaction using Microsoft Presidio."""
 
-from typing import Dict, List, Optional
 from enum import Enum
+
 from structlog import get_logger
 
 logger = get_logger(__name__)
@@ -34,7 +34,7 @@ class RedactionMode(str, Enum):
 
 class PIIEntity:
     """Detected PII entity."""
-    
+
     def __init__(
         self,
         text: str,
@@ -52,7 +52,7 @@ class PIIEntity:
 
 class PIIAnalyzer:
     """Analyzer for detecting PII in text."""
-    
+
     def __init__(self):
         """Initialize PII analyzer."""
         # In production, would initialize Presidio AnalyzerEngine
@@ -65,13 +65,13 @@ class PIIAnalyzer:
             PIICategory.IP_ADDRESS: r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b',
             PIICategory.URL: r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+[/\w .-]*/?',
         }
-    
-    async def analyze(self, text: str) -> List[PIIEntity]:
+
+    async def analyze(self, text: str) -> list[PIIEntity]:
         """Analyze text for PII entities."""
         import re
-        
+
         entities = []
-        
+
         for category, pattern in self.patterns.items():
             matches = re.finditer(pattern, text, re.IGNORECASE)
             for match in matches:
@@ -83,48 +83,48 @@ class PIIAnalyzer:
                     confidence=0.85  # Pattern-based confidence
                 )
                 entities.append(entity)
-        
+
         logger.info("PII analysis complete", entity_count=len(entities))
         return entities
 
 
 class PIIRedactor:
     """Redactor for PII entities."""
-    
+
     def __init__(self, mode: RedactionMode = RedactionMode.REPLACE):
         """Initialize PII redactor."""
         self.mode = mode
         self.analyzer = PIIAnalyzer()
-    
+
     async def redact(
         self,
         text: str,
-        categories: Optional[List[PIICategory]] = None,
-        mode: Optional[RedactionMode] = None
-    ) -> Dict:
+        categories: list[PIICategory] | None = None,
+        mode: RedactionMode | None = None
+    ) -> dict:
         """Redact PII from text."""
         mode = mode or self.mode
         categories = categories or list(PIICategory)
-        
+
         # Analyze for PII
         entities = await self.analyzer.analyze(text)
-        
+
         # Filter by categories
         filtered_entities = [
             entity for entity in entities
             if entity.category in categories
         ]
-        
+
         if not filtered_entities:
             return {
                 "redacted_text": text,
                 "entities": [],
                 "redaction_count": 0
             }
-        
+
         # Sort entities by position (reverse to avoid index shifting)
         filtered_entities.sort(key=lambda e: e.start, reverse=True)
-        
+
         # Apply redaction
         redacted_text = text
         for entity in filtered_entities:
@@ -133,13 +133,13 @@ class PIIRedactor:
                 entity,
                 mode
             )
-        
+
         logger.info(
             "PII redaction complete",
             entity_count=len(filtered_entities),
             mode=mode
         )
-        
+
         return {
             "redacted_text": redacted_text,
             "entities": [
@@ -154,7 +154,7 @@ class PIIRedactor:
             ],
             "redaction_count": len(filtered_entities)
         }
-    
+
     def _apply_redaction(
         self,
         text: str,
@@ -163,28 +163,28 @@ class PIIRedactor:
     ) -> str:
         """Apply redaction to a single entity."""
         placeholder = f"[{entity.category.value}]"
-        
+
         if mode == RedactionMode.REPLACE:
             return text[:entity.start] + placeholder + text[entity.end:]
-        
+
         elif mode == RedactionMode.MASK:
             masked = "*" * len(entity.text)
             return text[:entity.start] + masked + text[entity.end:]
-        
+
         elif mode == RedactionMode.HASH:
             import hashlib
             hashed = hashlib.sha256(entity.text.encode()).hexdigest()[:8]
             return text[:entity.start] + f"[HASH:{hashed}]" + text[entity.end:]
-        
+
         elif mode == RedactionMode.REMOVE:
             return text[:entity.start] + text[entity.end:]
-        
+
         return text
-    
+
     async def redact_for_llm(
         self,
         text: str,
-        provenance: Optional[str] = None
+        provenance: str | None = None
     ) -> str:
         """Redact PII specifically for LLM context."""
         # Use stricter redaction for untrusted sources
@@ -204,13 +204,13 @@ class PIIRedactor:
                 ],
                 mode=RedactionMode.MASK
             )
-        
+
         return result["redacted_text"]
 
 
 class PIIPolicyEnforcer:
     """Enforcer for PII policies based on provenance."""
-    
+
     def __init__(self):
         """Initialize PII policy enforcer."""
         self.redactor = PIIRedactor()
@@ -241,15 +241,15 @@ class PIIPolicyEnforcer:
                 "categories:": [PIICategory.SSN, PIICategory.CREDIT_CARD]
             }
         }
-    
+
     async def enforce_policy(
         self,
         text: str,
         provenance: str
-    ) -> Dict:
+    ) -> dict:
         """Enforce PII policy based on provenance."""
         policy = self.policies.get(provenance, self.policies["user_direct"])
-        
+
         if not policy["redact_all"]:
             # Only redact sensitive categories
             result = await self.redactor.redact(
@@ -264,7 +264,7 @@ class PIIPolicyEnforcer:
                 categories=policy["categories"],
                 mode=policy["mode"]
             )
-        
+
         return {
             "redacted_text": result["redacted_text"],
             "provenance": provenance,

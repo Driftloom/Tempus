@@ -1,8 +1,10 @@
 """Task-related events."""
 
-from pydantic import Field
-from app.core.events.base import Event
 from datetime import datetime
+
+from pydantic import Field
+
+from app.core.events.base import Event
 
 
 class TaskCreatedEvent(Event):

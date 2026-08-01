@@ -1,6 +1,7 @@
 """Structured logging configuration."""
 
 import structlog
+
 from app.core.config import settings
 
 
@@ -19,7 +20,7 @@ def configure_logging():
         logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,
     )
-    
+
     logger = structlog.get_logger()
     logger.info("Structured logging configured", level=settings.log_level)
     return logger

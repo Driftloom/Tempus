@@ -5,9 +5,9 @@ Revises:
 Create Date: 2024-01-16 00:00:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = '001_add_agent_runs'
@@ -64,7 +64,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_agent_run_steps_agent_run_id'), table_name='agent_run_steps')
     op.drop_index(op.f('ix_agent_run_steps_id'), table_name='agent_run_steps')
     op.drop_table('agent_run_steps')
-    
+
     op.drop_index(op.f('ix_agent_runs_status'), table_name='agent_runs')
     op.drop_index(op.f('ix_agent_runs_user_id'), table_name='agent_runs')
     op.drop_index(op.f('ix_agent_runs_agent_type'), table_name='agent_runs')

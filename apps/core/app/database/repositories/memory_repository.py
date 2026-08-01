@@ -1,49 +1,49 @@
 """Memory repository."""
 
-from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
-from sqlalchemy.orm import selectinload
+
 from pgvector.sqlalchemy import max_inner_product
-from app.database.models.memory import MemoryItem, MemoryEdge, MemoryLayer, MemorySensitivity
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database.models.memory import MemoryEdge, MemoryItem, MemoryLayer, MemorySensitivity
 from app.database.repositories.base import BaseRepository
 
 
 class MemoryRepository(BaseRepository[MemoryItem, dict, dict]):
     """Repository for MemoryItem model."""
-    
+
     async def query_by_similarity(
         self,
         db: AsyncSession,
         user_id: str,
-        query_embedding: List[float],
-        layer: Optional[MemoryLayer] = None,
-        sensitivity: Optional[MemorySensitivity] = None,
+        query_embedding: list[float],
+        layer: MemoryLayer | None = None,
+        sensitivity: MemorySensitivity | None = None,
         limit: int = 10
-    ) -> List[MemoryItem]:
+    ) -> list[MemoryItem]:
         """Query memory by vector similarity."""
         query = select(MemoryItem).where(MemoryItem.user_id == user_id)
-        
+
         if layer:
             query = query.where(MemoryItem.layer == layer)
         if sensitivity:
             query = query.where(MemoryItem.sensitivity == sensitivity)
-        
+
         # Add similarity ordering
         query = query.order_by(
             max_inner_product(MemoryItem.embedding, query_embedding).desc()
         ).limit(limit)
-        
+
         result = await db.execute(query)
         return result.scalars().all()
-    
+
     async def get_by_layer(
         self,
         db: AsyncSession,
         user_id: str,
         layer: MemoryLayer,
         limit: int = 100
-    ) -> List[MemoryItem]:
+    ) -> list[MemoryItem]:
         """Get memory items by layer."""
         result = await db.execute(
             select(MemoryItem)
@@ -52,7 +52,7 @@ class MemoryRepository(BaseRepository[MemoryItem, dict, dict]):
             .limit(limit)
         )
         return result.scalars().all()
-    
+
     async def create_edge(
         self,
         db: AsyncSession,

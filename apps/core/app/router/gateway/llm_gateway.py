@@ -1,16 +1,17 @@
 """LLM gateway for provider abstraction using LiteLLM."""
 
-from typing import Dict, Optional
-from app.core.config import settings
+
 import httpx
 from structlog import get_logger
+
+from app.core.config import settings
 
 logger = get_logger(__name__)
 
 
 class LLMGateway:
     """Gateway for abstracting LLM provider interactions using LiteLLM."""
-    
+
     def __init__(self):
         """Initialize LLM gateway with LiteLLM support."""
         self.litellm_base_url = getattr(settings, 'litellm_base_url', 'http://localhost:4000')
@@ -19,19 +20,19 @@ class LLMGateway:
         self.openai_api_key = settings.openai_api_key
         self.use_litellm = getattr(settings, 'use_litellm', False)
         self.client = httpx.AsyncClient(timeout=120.0)
-    
+
     async def execute(
         self,
         prompt: str,
         provider: str,
         model: str,
-        context: Optional[Dict] = None,
+        context: dict | None = None,
         temperature: float = 0.7,
         max_tokens: int = 1000
-    ) -> Dict:
+    ) -> dict:
         """Execute request with specified provider and model."""
         logger.info("Executing LLM request", provider=provider, model=model, use_litellm=self.use_litellm)
-        
+
         if self.use_litellm:
             return await self._execute_litellm(prompt, provider, model, context, temperature, max_tokens)
         elif provider == "local" or provider == "ollama":
@@ -42,16 +43,16 @@ class LLMGateway:
             return await self._execute_openai(prompt, model, context, temperature, max_tokens)
         else:
             raise ValueError(f"Unknown provider: {provider}")
-    
+
     async def _execute_litellm(
         self,
         prompt: str,
         provider: str,
         model: str,
-        context: Optional[Dict],
+        context: dict | None,
         temperature: float,
         max_tokens: int
-    ) -> Dict:
+    ) -> dict:
         """Execute request via LiteLLM gateway."""
         try:
             payload = {
@@ -60,24 +61,24 @@ class LLMGateway:
                 "temperature": temperature,
                 "max_tokens": max_tokens
             }
-            
+
             if context and context.get("system_message"):
                 payload["messages"].insert(0, {"role": "system", "content": context["system_message"]})
-            
+
             response = await self.client.post(
                 f"{self.litellm_base_url}/v1/chat/completions",
                 json=payload
             )
-            
+
             if response.status_code != 200:
                 logger.error("LiteLLM request failed", status_code=response.status_code)
                 return {"content": None, "provider": provider, "model": model, "error": f"HTTP {response.status_code}", "cost": 0.0}
-            
+
             data = response.json()
             choice = data.get("choices", [{}])[0]
             content = choice.get("message", {}).get("content")
             usage = data.get("usage", {})
-            
+
             return {
                 "content": content,
                 "provider": provider,
@@ -88,8 +89,8 @@ class LLMGateway:
         except Exception as e:
             logger.error("LiteLLM execution failed", error=str(e))
             return {"content": None, "provider": provider, "model": model, "error": str(e), "cost": 0.0}
-    
-    async def _execute_local(self, prompt: str, model: str) -> Dict:
+
+    async def _execute_local(self, prompt: str, model: str) -> dict:
         """Execute request with local Ollama."""
         try:
             async with httpx.AsyncClient(timeout=60) as client:
@@ -103,8 +104,8 @@ class LLMGateway:
         except Exception as e:
             logger.error("Local LLM execution failed", error=str(e))
             raise
-    
-    async def _execute_anthropic(self, prompt: str, model: str, context: Optional[Dict], temperature: float, max_tokens: int) -> Dict:
+
+    async def _execute_anthropic(self, prompt: str, model: str, context: dict | None, temperature: float, max_tokens: int) -> dict:
         """Execute request with Anthropic Claude."""
         try:
             async with httpx.AsyncClient(timeout=60) as client:
@@ -135,8 +136,8 @@ class LLMGateway:
         except Exception as e:
             logger.error("Anthropic execution failed", error=str(e))
             raise
-    
-    async def _execute_openai(self, prompt: str, model: str, context: Optional[Dict], temperature: float, max_tokens: int) -> Dict:
+
+    async def _execute_openai(self, prompt: str, model: str, context: dict | None, temperature: float, max_tokens: int) -> dict:
         """Execute request with OpenAI."""
         try:
             async with httpx.AsyncClient(timeout=60) as client:
@@ -159,7 +160,7 @@ class LLMGateway:
         except Exception as e:
             logger.error("OpenAI execution failed", error=str(e))
             raise
-    
+
     def _calculate_cost(self, provider: str, model: str, input_tokens: int, output_tokens: int) -> float:
         """Calculate cost based on provider pricing."""
         pricing = {
@@ -169,7 +170,7 @@ class LLMGateway:
         }
         model_pricing = pricing.get(provider, {}).get(model, (1.0, 1.0))
         return (input_tokens / 1_000_000) * model_pricing[0] + (output_tokens / 1_000_000) * model_pricing[1]
-    
+
     async def close(self):
         """Close HTTP client."""
         await self.client.aclose()

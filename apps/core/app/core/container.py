@@ -1,18 +1,21 @@
 """Dependency injection container."""
 
-from typing import TypeVar, Type, Callable, Any, Dict
+from collections.abc import Callable
 from functools import lru_cache
+from typing import Any, TypeVar
+
+import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.database.session import AsyncSessionLocal
-from app.database.repositories.user_repository import UserRepository
-from app.database.repositories.task_repository import TaskRepository
+
 from app.database.repositories.memory_repository import MemoryRepository
-from app.tasks.service import TaskService
-from app.memory.service import MemoryService
+from app.database.repositories.task_repository import TaskRepository
+from app.database.repositories.user_repository import UserRepository
+from app.database.session import AsyncSessionLocal
 from app.email.service import EmailService
+from app.memory.service import MemoryService
 from app.notifications.service import NotificationService
 from app.router.service import RouterService
-import structlog
+from app.tasks.service import TaskService
 
 logger = structlog.get_logger(__name__)
 
@@ -24,20 +27,20 @@ class Container:
 
     def __init__(self):
         """Initialize container."""
-        self._singletons: Dict[Type, Any] = {}
-        self._factories: Dict[Type, Callable] = {}
+        self._singletons: dict[type, Any] = {}
+        self._factories: dict[type, Callable] = {}
 
-    def register_singleton(self, interface: Type[T], implementation: T) -> None:
+    def register_singleton(self, interface: type[T], implementation: T) -> None:
         """Register a singleton dependency."""
         self._singletons[interface] = implementation
         logger.debug("Registered singleton", interface=interface.__name__)
 
-    def register_factory(self, interface: Type[T], factory: Callable[..., T]) -> None:
+    def register_factory(self, interface: type[T], factory: Callable[..., T]) -> None:
         """Register a factory dependency."""
         self._factories[interface] = factory
         logger.debug("Registered factory", interface=interface.__name__)
 
-    def get(self, interface: Type[T]) -> T:
+    def get(self, interface: type[T]) -> T:
         """Get a dependency from the container."""
         if interface in self._singletons:
             return self._singletons[interface]
@@ -45,7 +48,7 @@ class Container:
             return self._factories[interface]()
         raise ValueError(f"Dependency not registered: {interface.__name__}")
 
-    def get_with_session(self, interface: Type[T], session: AsyncSession) -> T:
+    def get_with_session(self, interface: type[T], session: AsyncSession) -> T:
         """Get a dependency with a database session."""
         if interface in self._factories:
             return self._factories[interface](session=session)
@@ -58,12 +61,12 @@ container = Container()
 
 def register_dependencies() -> None:
     """Register all dependencies in the container."""
-    
+
     # Register repositories
     container.register_factory(UserRepository, lambda session=None: UserRepository())
     container.register_factory(TaskRepository, lambda session=None: TaskRepository())
     container.register_factory(MemoryRepository, lambda session=None: MemoryRepository())
-    
+
     # Register services
     container.register_factory(
         TaskService,
@@ -91,11 +94,11 @@ def register_dependencies() -> None:
         RouterService,
         lambda session=None: RouterService()
     )
-    
+
     logger.info("Dependencies registered in container")
 
 
-@lru_cache()
+@lru_cache
 def get_container() -> Container:
     """Get the global container instance (cached)."""
     return container

@@ -1,11 +1,13 @@
 """Performance tests for database operations."""
 
-import pytest
 import asyncio
 import time
-from sqlalchemy import select, delete
+
+import pytest
+from sqlalchemy import delete, select
+
+from app.database.models.task import Task, TaskPriority, TaskStatus
 from app.database.models.user import User
-from app.database.models.task import Task, TaskStatus, TaskPriority
 
 
 @pytest.fixture
@@ -29,15 +31,15 @@ async def test_database_query_performance(test_db, cleanup_test_data):
         test_db.add(user)
         users.append(user)
     await test_db.commit()
-    
+
     # Measure query performance
     start_time = time.time()
-    
+
     result = await test_db.execute(select(User).where(User.email.like("%@example.com")))
     users_list = result.scalars().all()
-    
+
     elapsed = time.time() - start_time
-    
+
     print(f"Query time for 100 users: {elapsed * 1000:.2f}ms")
     assert len(users_list) == 100
 
@@ -46,7 +48,7 @@ async def test_database_query_performance(test_db, cleanup_test_data):
 async def test_database_insert_performance(test_db, cleanup_test_data):
     """Test database insert performance."""
     start_time = time.time()
-    
+
     # Batch insert
     tasks = []
     for i in range(50):
@@ -59,11 +61,11 @@ async def test_database_insert_performance(test_db, cleanup_test_data):
         )
         test_db.add(task)
         tasks.append(task)
-    
+
     await test_db.commit()
-    
+
     elapsed = time.time() - start_time
-    
+
     print(f"Insert time for 50 tasks: {elapsed * 1000:.2f}ms")
 
 
@@ -80,15 +82,15 @@ async def test_database_update_performance(test_db, cleanup_test_data):
     )
     test_db.add(task)
     await test_db.commit()
-    
+
     # Measure update performance
     start_time = time.time()
-    
+
     task.status = TaskStatus.COMPLETED
     await test_db.commit()
-    
+
     elapsed = time.time() - start_time
-    
+
     print(f"Update time: {elapsed * 1000:.2f}ms")
 
 
@@ -100,18 +102,18 @@ async def test_database_concurrent_queries(test_db, cleanup_test_data):
         user = User(id=f"user_concurrent_{i}", email=f"user{i}@example.com", name=f"User {i}")
         test_db.add(user)
     await test_db.commit()
-    
+
     async def query_user(user_id):
         result = await test_db.execute(select(User).where(User.id == user_id))
         return result.scalar_one_or_none()
-    
+
     start_time = time.time()
-    
+
     # Run concurrent queries
     await asyncio.gather(*[query_user(f"user_concurrent_{i}") for i in range(20)])
-    
+
     elapsed = time.time() - start_time
-    
+
     print(f"Concurrent query time for 20 users: {elapsed * 1000:.2f}ms")
 
 
@@ -129,11 +131,11 @@ async def test_database_index_performance(test_db, cleanup_test_data):
         )
         test_db.add(task)
     await test_db.commit()
-    
+
     # Query indexed column (user_id)
     start_time = time.time()
     result = await test_db.execute(select(Task).where(Task.user_id == "user123"))
     tasks = result.scalars().all()
     elapsed_indexed = time.time() - start_time
-    
+
     print(f"Indexed query time: {elapsed_indexed * 1000:.2f}ms")

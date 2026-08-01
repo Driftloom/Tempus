@@ -4,9 +4,11 @@ import importlib
 import importlib.util
 import sys
 from pathlib import Path
-from typing import Dict, Any, Optional, List
-from app.extensions.sdk import Extension, ExtensionConfig, ExtensionRegistry
+from typing import Any
+
 import structlog
+
+from app.extensions.sdk import Extension, ExtensionConfig, ExtensionRegistry
 
 logger = structlog.get_logger(__name__)
 
@@ -17,7 +19,7 @@ class PluginManager:
     def __init__(self, registry: ExtensionRegistry):
         """Initialize plugin manager."""
         self.registry = registry
-        self._loaded_plugins: Dict[str, Any] = {}
+        self._loaded_plugins: dict[str, Any] = {}
 
     async def load_plugin(self, plugin_path: str) -> bool:
         """Load a plugin from file path."""
@@ -56,16 +58,16 @@ class PluginManager:
         try:
             if plugin_path in self._loaded_plugins:
                 module = self._loaded_plugins[plugin_path]
-                
+
                 # Unregister extension if exists
                 if hasattr(module, "create_extension"):
                     extension = module.create_extension()
                     self.registry.unregister(extension.config.name)
-                
+
                 del self._loaded_plugins[plugin_path]
                 logger.info("Plugin unloaded", path=plugin_path)
                 return True
-            
+
             return False
 
         except Exception as e:
@@ -83,14 +85,14 @@ class PluginManager:
         for plugin_file in dir_path.glob("*.py"):
             if plugin_file.name.startswith("_"):
                 continue
-            
+
             if await self.load_plugin(str(plugin_file)):
                 loaded_count += 1
 
         logger.info("Plugins loaded from directory", directory=directory, count=loaded_count)
         return loaded_count
 
-    def list_loaded_plugins(self) -> List[str]:
+    def list_loaded_plugins(self) -> list[str]:
         """List loaded plugin paths."""
         return list(self._loaded_plugins.keys())
 
@@ -99,10 +101,10 @@ class PluginValidator:
     """Validate plugins before loading."""
 
     @staticmethod
-    def validate_plugin(plugin_path: str) -> tuple[bool, List[str]]:
+    def validate_plugin(plugin_path: str) -> tuple[bool, list[str]]:
         """Validate plugin file."""
         errors = []
-        
+
         try:
             path = Path(plugin_path)
             if not path.exists():
@@ -121,7 +123,7 @@ class PluginValidator:
             # Check for required functions
             if not hasattr(module, "create_extension"):
                 errors.append("Missing create_extension function")
-            
+
             if hasattr(module, "create_extension"):
                 try:
                     extension = module.create_extension()
@@ -150,17 +152,17 @@ class PluginPermissions:
     }
 
     @staticmethod
-    def validate_permissions(extension_config: ExtensionConfig) -> tuple[bool, List[str]]:
+    def validate_permissions(extension_config: ExtensionConfig) -> tuple[bool, list[str]]:
         """Validate extension permissions."""
         invalid_permissions = []
-        
+
         for perm in extension_config.permissions:
             if perm not in PluginPermissions.REQUIRED_PERMISSIONS:
                 invalid_permissions.append(perm)
-        
+
         return len(invalid_permissions) == 0, invalid_permissions
 
     @staticmethod
-    def get_permission_description(permission: str) -> Optional[str]:
+    def get_permission_description(permission: str) -> str | None:
         """Get description for a permission."""
         return PluginPermissions.REQUIRED_PERMISSIONS.get(permission)

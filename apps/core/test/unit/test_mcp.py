@@ -1,10 +1,12 @@
 """Unit tests for MCP module."""
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import AsyncMock
-from app.mcp.host import MCPHost
 from app.mcp.connector import MCPConnector
 from app.mcp.protocol import MCPMessage, MCPMessageType
+
+from app.mcp.host import MCPHost
 
 
 @pytest.fixture
@@ -41,7 +43,7 @@ def test_mcp_host_register_connector(mcp_host):
     """Test registering a connector."""
     connector = MCPConnector("test_connector")
     mcp_host.register_connector(connector)
-    
+
     assert "test_connector" in mcp_host.connectors
 
 
@@ -50,7 +52,7 @@ def test_mcp_host_unregister_connector(mcp_host):
     connector = MCPConnector("test_connector")
     mcp_host.register_connector(connector)
     mcp_host.unregister_connector("test_connector")
-    
+
     assert "test_connector" not in mcp_host.connectors
 
 
@@ -59,9 +61,9 @@ async def test_mcp_host_handle_message(mcp_host, mcp_message):
     """Test handling MCP message."""
     with patch.object(mcp_host, '_route_message', new_callable=AsyncMock) as mock_route:
         mock_route.return_value = {"result": "success"}
-        
+
         result = await mcp_host.handle_message(mcp_message)
-        
+
         assert result is not None
 
 
@@ -76,7 +78,7 @@ async def test_mcp_connector_connect(mcp_connector):
     """Test connector connection."""
     with patch.object(mcp_connector, '_establish_connection', return_value=True):
         result = await mcp_connector.connect()
-        
+
         assert result is True
 
 
@@ -85,7 +87,7 @@ async def test_mcp_connector_disconnect(mcp_connector):
     """Test connector disconnection."""
     with patch.object(mcp_connector, '_close_connection', return_value=True):
         result = await mcp_connector.disconnect()
-        
+
         assert result is True
 
 
@@ -98,12 +100,12 @@ async def test_mcp_connector_send(mcp_connector):
         method="test_method",
         params={}
     )
-    
+
     with patch.object(mcp_connector, '_send_message', new_callable=AsyncMock) as mock_send:
         mock_send.return_value = {"result": "success"}
-        
+
         result = await mcp_connector.send(message)
-        
+
         assert result is not None
 
 
@@ -116,9 +118,9 @@ async def test_mcp_connector_receive(mcp_connector):
             id="msg1",
             result={"data": "test"}
         )
-        
+
         result = await mcp_connector.receive()
-        
+
         assert result is not None
 
 
@@ -140,7 +142,7 @@ def test_mcp_message_type_values():
 def test_mcp_message_to_dict(mcp_message):
     """Test converting message to dictionary."""
     message_dict = mcp_message.to_dict()
-    
+
     assert "type" in message_dict
     assert "id" in message_dict
     assert "method" in message_dict
@@ -154,9 +156,9 @@ def test_mcp_message_from_dict():
         "method": "test_method",
         "params": {"param1": "value1"}
     }
-    
+
     message = MCPMessage.from_dict(message_dict)
-    
+
     assert message.type == MCPMessageType.REQUEST
     assert message.method == "test_method"
 
@@ -169,5 +171,5 @@ def test_mcp_message_validation():
         method="test_method",
         params={}
     )
-    
+
     assert valid_message.validate() is True

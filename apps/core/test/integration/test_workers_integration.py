@@ -1,7 +1,9 @@
 """Integration tests for Celery workers."""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch
+
 from app.workers.celery_app import celery_app
 from app.workers.tasks.agent_tasks import process_agent_task
 from app.workers.tasks.email_tasks import process_email_task
@@ -25,14 +27,14 @@ async def test_agent_task_execution():
         "user_id": "user123",
         "goal": "Test goal"
     }
-    
+
     with patch('app.workers.tasks.agent_tasks.AgentBase') as mock_agent:
         mock_agent_instance = MagicMock()
         mock_agent_instance.execute = AsyncMock(return_value={"result": "success"})
         mock_agent.return_value = mock_agent_instance
-        
+
         result = await process_agent_task(task_data)
-        
+
         assert result is not None
         assert "result" in result or "error" in result
 
@@ -46,14 +48,14 @@ async def test_email_task_execution():
         "subject": "Test email",
         "body": "Test body"
     }
-    
+
     with patch('app.workers.tasks.email_tasks.EmailProcessor') as mock_processor:
         mock_processor_instance = MagicMock()
         mock_processor_instance.process = AsyncMock(return_value={"tasks": []})
         mock_processor.return_value = mock_processor_instance
-        
+
         result = await process_email_task(task_data)
-        
+
         assert result is not None
 
 
@@ -65,14 +67,14 @@ async def test_memory_task_execution():
         "user_id": "user123",
         "content": "Test memory content"
     }
-    
+
     with patch('app.workers.tasks.memory_tasks.MemoryService') as mock_service:
         mock_service_instance = MagicMock()
         mock_service_instance.process_memory = AsyncMock(return_value={"embedding": []})
         mock_service.return_value = mock_service_instance
-        
+
         result = await process_memory_task(task_data)
-        
+
         assert result is not None
 
 
@@ -84,14 +86,14 @@ async def test_notification_task_execution():
         "type": "task_reminder",
         "message": "Task due in 1 hour"
     }
-    
+
     with patch('app.workers.tasks.notification_tasks.NotificationService') as mock_service:
         mock_service_instance = MagicMock()
-        mock_service_instance.send = AsyncMock(return_value {"sent": True})
+        mock_service_instance.send = AsyncMock(return_value={"sent": True})
         mock_service.return_value = mock_service_instance
-        
+
         result = await send_notification_task(task_data)
-        
+
         assert result is not None
         assert result.get("sent") is True
 
@@ -104,12 +106,12 @@ async def test_task_retry_on_failure():
         "user_id": "user123",
         "goal": "Test goal"
     }
-    
+
     with patch('app.workers.tasks.agent_tasks.AgentBase') as mock_agent:
         mock_agent_instance = MagicMock()
         mock_agent_instance.execute = AsyncMock(side_effect=Exception("Test error"))
         mock_agent.return_value = mock_agent_instance
-        
+
         try:
             await process_agent_task(task_data)
             assert False, "Should have raised exception"
@@ -125,15 +127,15 @@ async def test_task_result_storage():
         "user_id": "user123",
         "goal": "Test goal"
     }
-    
+
     with patch('app.workers.tasks.agent_tasks.AgentBase') as mock_agent:
         with patch('app.workers.tasks.agent_tasks.task_repository') as mock_repo:
             mock_agent_instance = MagicMock()
             mock_agent_instance.execute = AsyncMock(return_value={"result": "success"})
             mock_agent.return_value = mock_agent_instance
-            
+
             mock_repo.update = AsyncMock(return_value=True)
-            
+
             result = await process_agent_task(task_data)
-            
+
             assert result is not None

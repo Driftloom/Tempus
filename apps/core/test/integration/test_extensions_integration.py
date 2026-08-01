@@ -2,6 +2,7 @@
 
 import pytest
 from httpx import AsyncClient
+
 from app.main import app
 
 
@@ -15,13 +16,13 @@ async def test_load_extension():
             "description": "Test extension",
             "permissions": ["read:tasks", "write:tasks"]
         }
-        
+
         response = await client.post(
             "/extensions/load",
             json=extension_data,
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         assert response.status_code in [200, 401, 400]
 
 
@@ -33,7 +34,7 @@ async def test_unload_extension():
             "/extensions/unload/test_extension",
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         assert response.status_code in [200, 401, 404]
 
 
@@ -45,7 +46,7 @@ async def test_list_extensions():
             "/extensions",
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         assert response.status_code in [200, 401]
         if response.status_code == 200:
             data = response.json()
@@ -61,12 +62,12 @@ async def test_extension_webhook():
             "data": {"task_id": "task1"},
             "timestamp": "2024-01-01T00:00:00Z"
         }
-        
+
         response = await client.post(
             "/extensions/webhook",
             json=webhook_data
         )
-        
+
         assert response.status_code in [200, 400]
 
 
@@ -79,12 +80,12 @@ async def test_extension_permissions():
             "version": "1.0.0",
             "permissions": ["admin:delete_all"]  # Invalid permission
         }
-        
+
         response = await client.post(
             "/extensions/validate",
             json=extension_data
         )
-        
+
         assert response.status_code in [200, 400]
         if response.status_code == 400:
             data = response.json()
@@ -97,7 +98,7 @@ async def test_extension_registry():
     async with AsyncClient(app=app, base_url="http://test") as client:
         # Get extension from registry
         response = await client.get("/extensions/registry/test_extension")
-        
+
         assert response.status_code in [200, 404]
 
 
@@ -115,5 +116,5 @@ async def test_extension_sdk_call():
             },
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         assert response.status_code in [200, 401, 404]

@@ -1,7 +1,7 @@
 """Prometheus metrics configuration."""
 
+from prometheus_client import Counter, Gauge, Histogram
 from prometheus_fastapi_instrumentator import Instrumentator
-from prometheus_client import Counter, Histogram, Gauge
 from structlog import get_logger
 
 logger = get_logger(__name__)

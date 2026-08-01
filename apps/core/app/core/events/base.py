@@ -1,11 +1,13 @@
 """Base classes for event-driven architecture."""
 
-from abc import ABC, abstractmethod
-from typing import TypeVar, Generic, Any, Callable, List
-from pydantic import BaseModel
-from datetime import datetime
 import uuid
+from abc import ABC, abstractmethod
+from collections.abc import Callable
+from datetime import datetime
+from typing import Generic, TypeVar
+
 import structlog
+from pydantic import BaseModel
 
 logger = structlog.get_logger(__name__)
 
@@ -33,7 +35,7 @@ class EventBus:
 
     def __init__(self):
         """Initialize event bus."""
-        self._handlers: dict[str, List[Callable]] = {}
+        self._handlers: dict[str, list[Callable]] = {}
 
     def subscribe(self, event_type: type, handler: Callable) -> None:
         """Subscribe to an event type."""

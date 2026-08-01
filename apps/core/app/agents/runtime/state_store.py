@@ -1,40 +1,41 @@
 """Agent state store for persistence."""
 
-from typing import Dict, Optional
 from datetime import datetime
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from structlog import get_logger
-from app.database.models.agent_runs import AgentRun, AgentRunStep, AgentRunStatus
+
+from app.database.models.agent_runs import AgentRun, AgentRunStatus, AgentRunStep
 
 logger = get_logger(__name__)
 
 
 class AgentStateStore:
     """Store for agent state persistence using database."""
-    
+
     def __init__(self):
         """Initialize state store."""
         # Database-backed persistence for production
         pass
-    
-    async def save(self, db: AsyncSession, agent_id: str, state: Dict) -> bool:
+
+    async def save(self, db: AsyncSession, agent_id: str, state: dict) -> bool:
         """Save agent state to database."""
         logger.info("Saving agent state", agent_id=agent_id)
-        
+
         try:
             # Check if agent run exists
             result = await db.execute(
                 select(AgentRun).where(AgentRun.id == agent_id)
             )
             agent_run = result.scalar_one_or_none()
-            
+
             if agent_run:
                 # Update existing run
                 agent_run.status = state.get("status", AgentRunStatus.RUNNING)
                 agent_run.current_step_index = state.get("current_step", 0)
                 agent_run.cost_used_usd = state.get("budget_remaining", 1.0)
-                
+
                 if state.get("status") in [AgentRunStatus.COMPLETED, AgentRunStatus.ERROR, AgentRunStatus.CANCELLED]:
                     agent_run.completed_at = datetime.utcnow()
                     agent_run.result_summary = str(state.get("final_state", {}))
@@ -55,7 +56,7 @@ class AgentStateStore:
                     started_at=datetime.utcnow()
                 )
                 db.add(agent_run)
-            
+
             # Save steps if present
             steps = state.get("steps", [])
             for step_data in steps:
@@ -68,33 +69,33 @@ class AgentStateStore:
                     cost_usd=0.0
                 )
                 db.add(step)
-            
+
             await db.commit()
             logger.info("Agent state saved", agent_id=agent_id)
             return True
-            
+
         except Exception as e:
             logger.error("Failed to save agent state", agent_id=agent_id, error=str(e))
             await db.rollback()
             return False
-    
-    async def load(self, db: AsyncSession, agent_id: str) -> Optional[Dict]:
+
+    async def load(self, db: AsyncSession, agent_id: str) -> dict | None:
         """Load agent state from database."""
         try:
             result = await db.execute(
                 select(AgentRun).where(AgentRun.id == agent_id)
             )
             agent_run = result.scalar_one_or_none()
-            
+
             if not agent_run:
                 return None
-            
+
             # Load steps
             steps_result = await db.execute(
                 select(AgentRunStep).where(AgentRunStep.agent_run_id == agent_id)
             )
             steps = steps_result.scalars().all()
-            
+
             state = {
                 "agent_id": agent_run.id,
                 "user_id": agent_run.user_id,
@@ -115,13 +116,13 @@ class AgentStateStore:
                 "created_at": agent_run.started_at.isoformat(),
                 "completed_at": agent_run.completed_at.isoformat() if agent_run.completed_at else None
             }
-            
+
             return state
-            
+
         except Exception as e:
             logger.error("Failed to load agent state", agent_id=agent_id, error=str(e))
             return None
-    
+
     async def delete(self, db: AsyncSession, agent_id: str) -> bool:
         """Delete agent state from database."""
         try:
@@ -129,20 +130,20 @@ class AgentStateStore:
                 select(AgentRun).where(AgentRun.id == agent_id)
             )
             agent_run = result.scalar_one_or_none()
-            
+
             if agent_run:
                 await db.delete(agent_run)
                 await db.commit()
                 logger.info("Agent state deleted", agent_id=agent_id)
                 return True
-            
+
             return False
-            
+
         except Exception as e:
             logger.error("Failed to delete agent state", agent_id=agent_id, error=str(e))
             await db.rollback()
             return False
-    
+
     async def list_agents(self, db: AsyncSession, user_id: str) -> list:
         """List all agents for user."""
         try:
@@ -150,7 +151,7 @@ class AgentStateStore:
                 select(AgentRun).where(AgentRun.user_id == user_id)
             )
             agent_runs = result.scalars().all()
-            
+
             return [
                 {
                     "agent_id": run.id,
@@ -162,7 +163,7 @@ class AgentStateStore:
                 }
                 for run in agent_runs
             ]
-            
+
         except Exception as e:
             logger.error("Failed to list agents", user_id=user_id, error=str(e))
             return []

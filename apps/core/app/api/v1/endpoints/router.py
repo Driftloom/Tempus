@@ -1,7 +1,8 @@
 """API v1 router aggregation."""
 
 from fastapi import APIRouter
-from app.api.v1.endpoints import tasks, memory, auth, oauth
+
+from app.api.v1.endpoints import auth, memory, oauth, tasks
 
 api_router = APIRouter()
 

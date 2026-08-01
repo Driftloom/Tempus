@@ -1,10 +1,11 @@
 """OAuth2 endpoints for connector authentication."""
 
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+
+from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel
-from app.auth.oauth import oauth_handler
 from structlog import get_logger
+
+from app.auth.oauth import oauth_handler
 
 logger = get_logger(__name__)
 
@@ -15,22 +16,22 @@ class OAuthInitiateRequest(BaseModel):
     """Request to initiate OAuth flow."""
     provider: str
     redirect_uri: str
-    state: Optional[str] = None
+    state: str | None = None
 
 
 class OAuthInitiateResponse(BaseModel):
     """Response with authorization URL."""
     authorization_url: str
-    state: Optional[str]
+    state: str | None
 
 
 class OAuthCallbackResponse(BaseModel):
     """Response with OAuth tokens."""
     access_token: str
-    refresh_token: Optional[str]
+    refresh_token: str | None
     token_type: str
-    expires_in: Optional[int]
-    scope: Optional[str]
+    expires_in: int | None
+    scope: str | None
 
 
 class OAuthRefreshRequest(BaseModel):
@@ -48,7 +49,7 @@ async def initiate_oauth_flow(request: OAuthInitiateRequest):
             redirect_uri=request.redirect_uri,
             state=request.state
         )
-        
+
         return OAuthInitiateResponse(
             authorization_url=authorization_url,
             state=request.state
@@ -68,7 +69,7 @@ async def handle_oauth_callback(provider: str, request: Request):
     """Handle OAuth2 callback from provider."""
     try:
         tokens = await oauth_handler.handle_oauth_callback(provider, request)
-        
+
         return OAuthCallbackResponse(**tokens)
     except HTTPException:
         raise
@@ -88,7 +89,7 @@ async def refresh_oauth_token(request: OAuthRefreshRequest):
             provider=request.provider,
             refresh_token=request.refresh_token
         )
-        
+
         return OAuthCallbackResponse(**tokens)
     except HTTPException:
         raise

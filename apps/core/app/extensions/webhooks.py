@@ -1,9 +1,12 @@
 """Webhook handling for extensions."""
 
-from typing import Dict, Any, Callable, Optional
-from fastapi import Request, HTTPException
-from app.extensions.sdk import ExtensionRegistry
+from collections.abc import Callable
+from typing import Any
+
 import structlog
+from fastapi import HTTPException
+
+from app.extensions.sdk import ExtensionRegistry
 
 logger = structlog.get_logger(__name__)
 
@@ -14,7 +17,7 @@ class WebhookHandler:
     def __init__(self, registry: ExtensionRegistry):
         """Initialize webhook handler."""
         self.registry = registry
-        self._handlers: Dict[str, Callable] = {}
+        self._handlers: dict[str, Callable] = {}
 
     def register_handler(self, event_type: str, handler: Callable) -> None:
         """Register a webhook handler."""
@@ -25,8 +28,8 @@ class WebhookHandler:
         self,
         extension_name: str,
         event_type: str,
-        payload: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        payload: dict[str, Any]
+    ) -> dict[str, Any]:
         """Handle webhook event for extension."""
         extension = self.registry.get(extension_name)
         if not extension:
@@ -40,10 +43,10 @@ class WebhookHandler:
             logger.error("Webhook handling failed", extension=extension_name, error=str(e))
             raise HTTPException(status_code=500, detail="Webhook handling failed")
 
-    async def broadcast_webhook(self, event_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def broadcast_webhook(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Broadcast webhook to all extensions with webhook permission."""
         results = {}
-        
+
         for config in self.registry.list_extensions():
             if "webhook" in config.permissions:
                 try:
@@ -53,7 +56,7 @@ class WebhookHandler:
                 except Exception as e:
                     logger.error("Webhook broadcast failed", extension=config.name, error=str(e))
                     results[config.name] = {"status": "error", "error": str(e)}
-        
+
         return {"results": results}
 
 
@@ -61,16 +64,16 @@ class WebhookValidator:
     """Validate webhook payloads."""
 
     @staticmethod
-    def validate_payload(payload: Dict[str, Any], schema: Dict[str, Any]) -> tuple[bool, List[str]]:
+    def validate_payload(payload: dict[str, Any], schema: dict[str, Any]) -> tuple[bool, List[str]]:
         """Validate webhook payload against schema."""
         errors = []
-        
+
         for field, field_type in schema.items():
             if field not in payload:
                 errors.append(f"Missing required field: {field}")
             elif not isinstance(payload[field], field_type):
                 errors.append(f"Field {field} has wrong type")
-        
+
         return len(errors) == 0, errors
 
 

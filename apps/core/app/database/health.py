@@ -1,9 +1,9 @@
 """Database health checks."""
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
-from app.database.session import engine
 import structlog
+from sqlalchemy import text
+
+from app.database.session import engine
 
 logger = structlog.get_logger(__name__)
 
@@ -14,7 +14,7 @@ async def check_database_health() -> dict:
         async with engine.connect() as conn:
             result = await conn.execute(text("SELECT 1"))
             result.fetchone()
-        
+
         return {
             "status": "healthy",
             "message": "Database connection successful"
@@ -33,7 +33,7 @@ async def check_database_performance() -> dict:
         async with engine.connect() as conn:
             # Check connection pool status
             pool_status = engine.pool.status()
-            
+
             # Check query performance
             result = await conn.execute(text(
                 "SELECT pg_stat_database.datname, "
@@ -44,7 +44,7 @@ async def check_database_performance() -> dict:
                 "WHERE pg_stat_database.datname = current_database()"
             ))
             db_stats = result.fetchone()
-            
+
             return {
                 "status": "healthy",
                 "pool_size": pool_status.size,
@@ -76,7 +76,7 @@ async def check_table_sizes() -> dict:
                 "ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC"
             ))
             table_sizes = result.fetchall()
-            
+
             return {
                 "status": "healthy",
                 "tables": [
@@ -108,7 +108,7 @@ async def check_index_usage() -> dict:
                 "LIMIT 20"
             ))
             index_stats = result.fetchall()
-            
+
             return {
                 "status": "healthy",
                 "indexes": [

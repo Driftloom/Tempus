@@ -1,7 +1,7 @@
 """Prompt injection defense for guardrails layer."""
 
-from typing import Dict, Optional, List
 from enum import Enum
+
 from structlog import get_logger
 
 logger = get_logger(__name__)
@@ -27,14 +27,14 @@ class InjectionSeverity(str, Enum):
 
 class InjectionResult:
     """Result of injection detection."""
-    
+
     def __init__(
         self,
         detected: bool,
-        injection_type: Optional[InjectionType],
-        severity: Optional[InjectionSeverity],
+        injection_type: InjectionType | None,
+        severity: InjectionSeverity | None,
         confidence: float,
-        details: Optional[Dict] = None
+        details: dict | None = None
     ):
         self.detected = detected
         self.injection_type = injection_type
@@ -45,7 +45,7 @@ class InjectionResult:
 
 class InjectionClassifier:
     """Classifier for detecting prompt injection attacks."""
-    
+
     def __init__(self):
         """Initialize injection classifier."""
         self.injection_patterns = {
@@ -106,29 +106,29 @@ class InjectionClassifier:
                 "unrestricted mode"
             ]
         }
-        
+
         self.high_risk_sources = [
             "external_untrusted:email",
             "external_untrusted:web",
             "external_untrusted:connector"
         ]
-    
+
     async def classify(
         self,
         text: str,
-        context: Optional[Dict] = None
+        context: dict | None = None
     ) -> InjectionResult:
         """Classify text for injection attempts."""
         context = context or {}
         text_lower = text.lower()
-        
+
         # Check provenance
         provenance = context.get("provenance", "user_direct")
         is_untrusted = provenance in self.high_risk_sources
-        
+
         # Scan for injection patterns
         detected_injections = []
-        
+
         for injection_type, patterns in self.injection_patterns.items():
             for pattern in patterns:
                 if pattern.lower() in text_lower:
@@ -137,7 +137,7 @@ class InjectionClassifier:
                         "pattern": pattern,
                         "match_count": text_lower.count(pattern.lower())
                     })
-        
+
         if not detected_injections:
             return InjectionResult(
                 detected=False,
@@ -145,11 +145,11 @@ class InjectionClassifier:
                 severity=None,
                 confidence=0.0
             )
-        
+
         # Determine severity based on injection type and count
         injection_types = [inj["type"] for inj in detected_injections]
         match_count = sum(inj["match_count"] for inj in detected_injections)
-        
+
         # Critical injections
         if InjectionType.JAILBREAK_ATTEMPT in injection_types or InjectionType.CODE_INJECTION in injection_types:
             severity = InjectionSeverity.CRITICAL
@@ -165,7 +165,7 @@ class InjectionClassifier:
         else:
             severity = InjectionSeverity.LOW
             confidence = min(0.6 + (match_count * 0.05), 1.0)
-        
+
         # Boost confidence for untrusted sources
         if is_untrusted:
             confidence = min(confidence + 0.2, 1.0)
@@ -174,7 +174,7 @@ class InjectionClassifier:
                 severity = InjectionSeverity.HIGH
             elif severity == InjectionSeverity.LOW:
                 severity = InjectionSeverity.MEDIUM
-        
+
         return InjectionResult(
             detected=True,
             injection_type=injection_types[0],  # Primary type
@@ -186,30 +186,30 @@ class InjectionClassifier:
                 "is_untrusted": is_untrusted
             }
         )
-    
+
     def should_block(self, result: InjectionResult, strict_mode: bool = False) -> bool:
         """Determine if content should be blocked based on injection result."""
         if not result.detected:
             return False
-        
+
         # Always block critical injections
         if result.severity == InjectionSeverity.CRITICAL:
             return True
-        
+
         # Block high severity in strict mode or with high confidence
         if result.severity == InjectionSeverity.HIGH:
             return strict_mode or result.confidence > 0.8
-        
+
         # Block medium severity in strict mode with high confidence
         if result.severity == InjectionSeverity.MEDIUM:
             return strict_mode and result.confidence > 0.9
-        
+
         return False
 
 
 class ProvenanceEnforcer:
     """Enforcer for provenance-based policies."""
-    
+
     def __init__(self):
         """Initialize provenance enforcer."""
         self.policies = {
@@ -244,15 +244,15 @@ class ProvenanceEnforcer:
                 "must_be_redacted": False
             }
         }
-    
+
     def check_permission(
         self,
         provenance: str,
         action: str = "use_in_llm_context"
-    ) -> Dict:
+    ) -> dict:
         """Check if content with given provenance is allowed for action."""
         policy = self.policies.get(provenance, self.policies["user_direct"])
-        
+
         if action == "use_in_llm_context":
             return {
                 "allowed": policy["allowed_in_llm_context"],
@@ -260,14 +260,14 @@ class ProvenanceEnforcer:
                 "max_length": policy["max_context_length"],
                 "must_redact": policy["must_be_redacted"]
             }
-        
+
         return {"allowed": True, "requires_approval": False}
-    
+
     def enforce_length_limit(self, content: str, provenance: str) -> str:
         """Enforce length limits based on provenance."""
         policy = self.policies.get(provenance, self.policies["user_direct"])
         max_length = policy.get("max_context_length")
-        
+
         if max_length and len(content) > max_length:
             logger.warning(
                 "Content truncated due to provenance policy",
@@ -276,5 +276,5 @@ class ProvenanceEnforcer:
                 max_length=max_length
             )
             return content[:max_length] + "... [truncated]"
-        
+
         return content

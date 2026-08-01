@@ -1,7 +1,8 @@
 """Base classes for CQRS pattern."""
 
 from abc import ABC, abstractmethod
-from typing import TypeVar, Generic, Any
+from typing import Generic, TypeVar
+
 from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)

@@ -1,14 +1,14 @@
 """Celery tasks package."""
 
+from app.workers.tasks.agent_tasks import (
+    cleanup_agent_runs,
+    execute_agent,
+    monitor_agent_costs,
+)
 from app.workers.tasks.email_tasks import (
-    process_email_sync,
     classify_email,
     extract_entities_from_email,
-)
-from app.workers.tasks.notification_tasks import (
-    deliver_notification,
-    escalate_notification,
-    schedule_notifications,
+    process_email_sync,
 )
 from app.workers.tasks.memory_tasks import (
     consolidate_memory,
@@ -16,10 +16,10 @@ from app.workers.tasks.memory_tasks import (
     prune_old_memory,
     update_memory_importance,
 )
-from app.workers.tasks.agent_tasks import (
-    execute_agent,
-    cleanup_agent_runs,
-    monitor_agent_costs,
+from app.workers.tasks.notification_tasks import (
+    deliver_notification,
+    escalate_notification,
+    schedule_notifications,
 )
 
 __all__ = [

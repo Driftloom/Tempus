@@ -1,14 +1,14 @@
 """Query definitions."""
 
+from app.core.cqrs.queries.memory_queries import (
+    GetMemoriesByUserQuery,
+    GetMemoryQuery,
+    SearchMemoryQuery,
+)
 from app.core.cqrs.queries.task_queries import (
+    GetPendingTasksQuery,
     GetTaskQuery,
     GetTasksByUserQuery,
-    GetPendingTasksQuery,
-)
-from app.core.cqrs.queries.memory_queries import (
-    GetMemoryQuery,
-    GetMemoriesByUserQuery,
-    SearchMemoryQuery,
 )
 
 __all__ = [

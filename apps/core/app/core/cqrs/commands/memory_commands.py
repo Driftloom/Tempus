@@ -1,8 +1,7 @@
 """Memory commands."""
 
-from pydantic import Field
+
 from app.core.cqrs.base import Command
-from typing import Optional
 
 
 class CreateMemoryCommand(Command):
@@ -18,9 +17,9 @@ class UpdateMemoryCommand(Command):
     """Command to update a memory."""
     memory_id: str
     user_id: str
-    content: Optional[str] = None
-    layer: Optional[str] = None
-    importance_score: Optional[float] = None
+    content: str | None = None
+    layer: str | None = None
+    importance_score: float | None = None
 
 
 class DeleteMemoryCommand(Command):

@@ -2,6 +2,7 @@
 
 import pytest
 from httpx import AsyncClient
+
 from app.main import app
 
 
@@ -15,13 +16,13 @@ async def test_create_notification():
             "message": "Task due in 1 hour",
             "channels": ["email", "push"]
         }
-        
+
         response = await client.post(
             "/notifications",
             json=notification_data,
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         assert response.status_code in [200, 201, 401]
 
 
@@ -33,7 +34,7 @@ async def test_send_notification():
             "/notifications/send/notif1",
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         assert response.status_code in [200, 401, 404]
 
 
@@ -45,7 +46,7 @@ async def test_list_notifications():
             "/notifications/user/user123",
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         assert response.status_code in [200, 401]
         if response.status_code == 200:
             data = response.json()
@@ -60,7 +61,7 @@ async def test_mark_notification_read():
             "/notifications/notif1/read",
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         assert response.status_code in [200, 401, 404]
 
 
@@ -73,13 +74,13 @@ async def test_schedule_notification():
             "scheduled_time": "2024-01-01T10:00:00Z",
             "message": "Scheduled notification"
         }
-        
+
         response = await client.post(
             "/notifications/schedule",
             json=notification_data,
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         assert response.status_code in [200, 201, 401]
 
 
@@ -93,13 +94,13 @@ async def test_notification_channels():
             "message": "Test notification",
             "channels": ["email", "push", "sms"]
         }
-        
+
         response = await client.post(
             "/notifications",
             json=notification_data,
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         assert response.status_code in [200, 201, 401]
 
 
@@ -113,13 +114,13 @@ async def test_quiet_hours():
             "start_time": "22:00",
             "end_time": "08:00"
         }
-        
+
         response = await client.post(
             "/notifications/quiet-hours",
             json=quiet_hours_data,
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         assert response.status_code in [200, 401]
 
 
@@ -133,11 +134,11 @@ async def test_notification_preferences():
             "push_enabled": True,
             "sms_enabled": False
         }
-        
+
         response = await client.put(
             "/notifications/preferences/user123",
             json=preferences_data,
             headers={"Authorization": "Bearer test_token"}
         )
-        
+
         assert response.status_code in [200, 401]

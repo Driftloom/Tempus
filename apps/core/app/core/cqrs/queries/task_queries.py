@@ -1,8 +1,7 @@
 """Task queries."""
 
-from pydantic import Field
+
 from app.core.cqrs.base import Query
-from typing import Optional
 
 
 class GetTaskQuery(Query):
@@ -14,8 +13,8 @@ class GetTaskQuery(Query):
 class GetTasksByUserQuery(Query):
     """Query to get tasks for a user."""
     user_id: str
-    status: Optional[str] = None
-    priority: Optional[str] = None
+    status: str | None = None
+    priority: str | None = None
     skip: int = 0
     limit: int = 100
 

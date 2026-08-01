@@ -1,8 +1,9 @@
 """Redis client configuration."""
 
 import redis.asyncio as redis
-from app.core.config import settings
 import structlog
+
+from app.core.config import settings
 
 logger = structlog.get_logger(__name__)
 

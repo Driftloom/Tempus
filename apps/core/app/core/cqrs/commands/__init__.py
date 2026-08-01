@@ -1,16 +1,16 @@
 """Command definitions."""
 
-from app.core.cqrs.commands.task_commands import (
-    CreateTaskCommand,
-    UpdateTaskCommand,
-    DeleteTaskCommand,
-    CompleteTaskCommand,
-)
 from app.core.cqrs.commands.memory_commands import (
-    CreateMemoryCommand,
-    UpdateMemoryCommand,
-    DeleteMemoryCommand,
     ConsolidateMemoryCommand,
+    CreateMemoryCommand,
+    DeleteMemoryCommand,
+    UpdateMemoryCommand,
+)
+from app.core.cqrs.commands.task_commands import (
+    CompleteTaskCommand,
+    CreateTaskCommand,
+    DeleteTaskCommand,
+    UpdateTaskCommand,
 )
 
 __all__ = [

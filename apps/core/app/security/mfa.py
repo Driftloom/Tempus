@@ -1,11 +1,10 @@
 """Multi-Factor Authentication (MFA)."""
 
-from typing import Optional, Dict
+import base64
+from io import BytesIO
+
 import pyotp
 import qrcode
-from io import BytesIO
-import base64
-from app.core.config import settings
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -14,7 +13,7 @@ logger = structlog.get_logger(__name__)
 class MFAManager:
     """Manager for Multi-Factor Authentication."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize MFA manager."""
         self.issuer = "TEMPUS"
 
@@ -39,12 +38,12 @@ class MFAManager:
         qr = qrcode.QRCode(version=1, box_size=10, border=5)
         qr.add_data(uri)
         qr.make(fit=True)
-    
+
         img = qr.make_image(fill_color="black", back_color="white")
         buffer = BytesIO()
         img.save(buffer, format='PNG')
         img_str = base64.b64encode(buffer.getvalue()).decode()
-    
+
         return f"data:image/png;base64,{img_str}"
 
     def verify_totp(self, secret: str, token: str) -> bool:
@@ -52,12 +51,12 @@ class MFAManager:
         totp = pyotp.TOTP(secret)
         return totp.verify(token)
 
-    def setup_mfa(self, user_email: str) -> Dict[str, str]:
+    def setup_mfa(self, user_email: str) -> dict[str, str]:
         """Setup MFA for user."""
         secret = self.generate_secret()
         uri = self.generate_totp_uri(secret, user_email)
         qr_code = self.generate_qr_code(uri)
-    
+
         return {
             "secret": secret,
             "qr_code": qr_code,

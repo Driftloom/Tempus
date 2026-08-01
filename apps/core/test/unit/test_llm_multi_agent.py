@@ -1,8 +1,10 @@
 """Unit tests for LLM multi-agent module."""
 
-import pytest
 from unittest.mock import AsyncMock, patch
-from app.llm.multi_agent import AgentRole, MultiAgentOrchestrator, AgentWorkflow
+
+import pytest
+
+from app.llm.multi_agent import AgentRole, AgentWorkflow, MultiAgentOrchestrator
 
 
 @pytest.fixture
@@ -20,7 +22,7 @@ def test_agent_role_initialization():
         description="Plans tasks",
         system_prompt="You are a planner",
     )
-    
+
     assert role.name == "planner"
     assert role.description == "Plans tasks"
     assert role.system_prompt == "You are a planner"
@@ -34,7 +36,7 @@ def test_agent_role_with_capabilities():
         system_prompt="You are a researcher",
         capabilities=["search", "analyze", "summarize"],
     )
-    
+
     assert "search" in role.capabilities
     assert "analyze" in role.capabilities
 
@@ -48,9 +50,9 @@ async def test_orchestrator_register_agent(orchestrator):
         description="Test agent",
         system_prompt="You are a test agent",
     )
-    
+
     orchestrator.register_agent(agent)
-    
+
     assert "test_agent" in orchestrator.agents
 
 
@@ -62,14 +64,14 @@ async def test_orchestrator_execute_agent(orchestrator):
         description="Test agent",
         system_prompt="You are a test agent",
     )
-    
+
     orchestrator.register_agent(agent)
-    
+
     with patch.object(orchestrator.llm_router, 'complete', new_callable=AsyncMock) as mock_complete:
         mock_complete.return_value = {"choices": [{"message": {"content": "Test response"}}]}
-        
+
         result = await orchestrator.execute_agent("test_agent", "Test task")
-        
+
         assert result is not None
         mock_complete.assert_called_once()
 
@@ -79,19 +81,19 @@ async def test_orchestrator_sequential_workflow(orchestrator):
     """Test sequential workflow execution."""
     agent1 = AgentRole(name="agent1", description="Agent 1", system_prompt="Agent 1")
     agent2 = AgentRole(name="agent2", description="Agent 2", system_prompt="Agent 2")
-    
+
     orchestrator.register_agent(agent1)
     orchestrator.register_agent(agent2)
-    
+
     with patch.object(orchestrator.llm_router, 'complete', new_callable=AsyncMock) as mock_complete:
         mock_complete.return_value = {"choices": [{"message": {"content": "Response"}}]}
-        
+
         result = await orchestrator.execute_workflow(
             AgentWorkflow.SEQUENTIAL,
             ["agent1", "agent2"],
             "Test task"
         )
-        
+
         assert result is not None
 
 
@@ -100,19 +102,19 @@ async def test_orchestrator_hierarchical_workflow(orchestrator):
     """Test hierarchical workflow execution."""
     supervisor = AgentRole(name="supervisor", description="Supervisor", system_prompt="Supervisor")
     worker = AgentRole(name="worker", description="Worker", system_prompt="Worker")
-    
+
     orchestrator.register_agent(supervisor)
     orchestrator.register_agent(worker)
-    
+
     with patch.object(orchestrator.llm_router, 'complete', new_callable=AsyncMock) as mock_complete:
         mock_complete.return_value = {"choices": [{"message": {"content": "Response"}}]}
-        
+
         result = await orchestrator.execute_workflow(
             AgentWorkflow.HIERARCHICAL,
             {"supervisor": "supervisor", "workers": ["worker"]},
             "Test task"
         )
-        
+
         assert result is not None
 
 
@@ -121,19 +123,19 @@ async def test_orchestrator_collaborative_workflow(orchestrator):
     """Test collaborative workflow execution."""
     agent1 = AgentRole(name="agent1", description="Agent 1", system_prompt="Agent 1")
     agent2 = AgentRole(name="agent2", description="Agent 2", system_prompt="Agent 2")
-    
+
     orchestrator.register_agent(agent1)
     orchestrator.register_agent(agent2)
-    
+
     with patch.object(orchestrator.llm_router, 'complete', new_callable=AsyncMock) as mock_complete:
         mock_complete.return_value = {"choices": [{"message": {"content": "Response"}}]}
-        
+
         result = await orchestrator.execute_workflow(
             AgentWorkflow.COLLABORATIVE,
             ["agent1", "agent2"],
             "Test task"
         )
-        
+
         assert result is not None
 
 

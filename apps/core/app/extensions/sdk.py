@@ -1,10 +1,11 @@
 """TEMPUS SDK for extension development."""
 
-from typing import Dict, Any, Optional, Callable, List
 from abc import ABC, abstractmethod
-from pydantic import BaseModel
+from typing import Any
+
 import httpx
 import structlog
+from pydantic import BaseModel
 
 logger = structlog.get_logger(__name__)
 
@@ -30,10 +31,10 @@ class TempusClient:
         self,
         user_id: str,
         title: str,
-        description: Optional[str] = None,
+        description: str | None = None,
         priority: str = "medium",
-        due_at: Optional[str] = None
-    ) -> Dict[str, Any]:
+        due_at: str | None = None
+    ) -> dict[str, Any]:
         """Create a task."""
         response = await self.client.post(
             "/api/v1/tasks",
@@ -48,12 +49,12 @@ class TempusClient:
         response.raise_for_status()
         return response.json()
 
-    async def get_tasks(self, user_id: str, status: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def get_tasks(self, user_id: str, status: str | None = None) -> list[dict[str, Any]]:
         """Get tasks for user."""
         params = {"user_id": user_id}
         if status:
             params["status"] = status
-        
+
         response = await self.client.get("/api/v1/tasks", params=params)
         response.raise_for_status()
         return response.json()
@@ -64,7 +65,7 @@ class TempusClient:
         content: str,
         layer: str = "short_term",
         provenance: str = "extension"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a memory."""
         response = await self.client.post(
             "/api/v1/memory",
@@ -78,7 +79,7 @@ class TempusClient:
         response.raise_for_status()
         return response.json()
 
-    async def search_memory(self, user_id: str, query: str) -> List[Dict[str, Any]]:
+    async def search_memory(self, user_id: str, query: str) -> list[dict[str, Any]]:
         """Search memory."""
         response = await self.client.get(
             "/api/v1/memory/search",
@@ -93,7 +94,7 @@ class TempusClient:
         title: str,
         message: str,
         priority: str = "medium"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a notification."""
         response = await self.client.post(
             "/api/v1/notifications",
@@ -114,8 +115,8 @@ class ExtensionConfig(BaseModel):
     version: str
     description: str
     author: str
-    permissions: List[str] = []
-    capabilities: List[str] = []
+    permissions: list[str] = []
+    capabilities: list[str] = []
 
 
 class Extension(ABC):
@@ -132,7 +133,7 @@ class Extension(ABC):
         pass
 
     @abstractmethod
-    async def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, data: dict[str, Any]) -> dict[str, Any]:
         """Process data."""
         pass
 
@@ -141,7 +142,7 @@ class Extension(ABC):
         """Shutdown extension."""
         pass
 
-    async def handle_webhook(self, event_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle_webhook(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Handle webhook event."""
         logger.info("Webhook received", extension=self.config.name, event_type=event_type)
         return {"status": "acknowledged"}
@@ -154,7 +155,7 @@ class ExtensionContext:
         self,
         user_id: str,
         extension_id: str,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None
     ):
         """Initialize context."""
         self.user_id = user_id
@@ -179,8 +180,8 @@ class ExtensionRegistry:
 
     def __init__(self):
         """Initialize registry."""
-        self._extensions: Dict[str, Extension] = {}
-        self._configs: Dict[str, ExtensionConfig] = {}
+        self._extensions: dict[str, Extension] = {}
+        self._configs: dict[str, ExtensionConfig] = {}
 
     def register(self, extension: Extension) -> None:
         """Register an extension."""
@@ -195,15 +196,15 @@ class ExtensionRegistry:
             del self._configs[name]
             logger.info("Extension unregistered", name=name)
 
-    def get(self, name: str) -> Optional[Extension]:
+    def get(self, name: str) -> Extension | None:
         """Get extension by name."""
         return self._extensions.get(name)
 
-    def get_config(self, name: str) -> Optional[ExtensionConfig]:
+    def get_config(self, name: str) -> ExtensionConfig | None:
         """Get extension config by name."""
         return self._configs.get(name)
 
-    def list_extensions(self) -> List[ExtensionConfig]:
+    def list_extensions(self) -> list[ExtensionConfig]:
         """List all registered extensions."""
         return list(self._configs.values())
 

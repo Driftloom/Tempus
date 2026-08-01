@@ -1,6 +1,5 @@
 """Memory-related events."""
 
-from pydantic import Field
 from app.core.events.base import Event
 
 

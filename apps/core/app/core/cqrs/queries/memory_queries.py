@@ -1,8 +1,7 @@
 """Memory queries."""
 
-from pydantic import Field
+
 from app.core.cqrs.base import Query
-from typing import Optional
 
 
 class GetMemoryQuery(Query):
@@ -14,7 +13,7 @@ class GetMemoryQuery(Query):
 class GetMemoriesByUserQuery(Query):
     """Query to get memories for a user."""
     user_id: str
-    layer: Optional[str] = None
+    layer: str | None = None
     skip: int = 0
     limit: int = 100
 
@@ -23,5 +22,5 @@ class SearchMemoryQuery(Query):
     """Query to search memories."""
     user_id: str
     query: str
-    layer: Optional[str] = None
+    layer: str | None = None
     limit: int = 10

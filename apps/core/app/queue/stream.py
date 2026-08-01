@@ -1,8 +1,11 @@
 """Stream processor for event streaming."""
 
-from typing import AsyncGenerator, Callable, Any
-from app.workers.celery_app import celery_app
+from collections.abc import AsyncGenerator, Callable
+from typing import Any
+
 import structlog
+
+from app.workers.celery_app import celery_app
 
 logger = structlog.get_logger(__name__)
 
@@ -24,23 +27,23 @@ class StreamProcessor:
         """Process a stream of items."""
         results = []
         batch = []
-        
+
         try:
             async for item in stream:
                 batch.append(item)
-                
+
                 if len(batch) >= self.batch_size:
                     batch_results = await self._process_batch(batch, processor, on_error)
                     results.extend(batch_results)
                     batch = []
-            
+
             # Process remaining items
             if batch:
                 batch_results = await self._process_batch(batch, processor, on_error)
                 results.extend(batch_results)
-            
+
             return results
-        
+
         except Exception as e:
             logger.error("Stream processing failed", error=str(e))
             if on_error:
@@ -55,7 +58,7 @@ class StreamProcessor:
     ) -> list[Any]:
         """Process a batch of items."""
         results = []
-        
+
         for item in batch:
             try:
                 result = await processor(item)
@@ -65,7 +68,7 @@ class StreamProcessor:
                 if on_error:
                     on_error(e)
                 results.append(None)
-        
+
         return results
 
     async def stream_from_queue(
@@ -77,14 +80,14 @@ class StreamProcessor:
         with celery_app.connection_or_acquire() as conn:
             with conn.channel() as channel:
                 queue = channel.queue_declare(queue_name, durable=True)
-                
+
                 while True:
                     method, properties, body = channel.basic_get(queue_name)
-                    
+
                     if method is None:
                         # No more messages
                         break
-                    
+
                     try:
                         result = await processor(body)
                         channel.basic_ack(method.delivery_tag)

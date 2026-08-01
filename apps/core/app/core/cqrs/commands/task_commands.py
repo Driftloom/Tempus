@@ -1,18 +1,17 @@
 """Task commands."""
 
-from pydantic import Field
-from app.core.cqrs.base import Command
 from datetime import datetime
-from typing import Optional
+
+from app.core.cqrs.base import Command
 
 
 class CreateTaskCommand(Command):
     """Command to create a task."""
     user_id: str
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     priority: str = "medium"
-    due_at: Optional[datetime] = None
+    due_at: datetime | None = None
     source: str = "manual"
 
 
@@ -20,11 +19,11 @@ class UpdateTaskCommand(Command):
     """Command to update a task."""
     task_id: str
     user_id: str
-    title: Optional[str] = None
-    description: Optional[str] = None
-    status: Optional[str] = None
-    priority: Optional[str] = None
-    due_at: Optional[datetime] = None
+    title: str | None = None
+    description: str | None = None
+    status: str | None = None
+    priority: str | None = None
+    due_at: datetime | None = None
 
 
 class DeleteTaskCommand(Command):

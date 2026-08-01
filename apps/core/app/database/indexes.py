@@ -1,10 +1,9 @@
 """Database indexes for performance optimization."""
 
-from sqlalchemy import Index, text
-from app.database.models.memory import MemoryItem, MemoryEdge
-from app.database.models.task import Task
-from app.database.models.user import User
+from sqlalchemy import Index
 
+from app.database.models.memory import MemoryEdge, MemoryItem
+from app.database.models.task import Task
 
 # Memory indexes
 memory_user_layer_index = Index(
