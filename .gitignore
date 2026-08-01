@@ -125,3 +125,6 @@ deploy/k8s/secrets.yaml
 # Local development
 *.local
 .local
+
+# Turbo build cache
+.turbo/
