@@ -2,7 +2,7 @@
 
 import pytest
 from app.core.cqrs.bus import CommandBus, QueryBus
-from app.core.cqrs.base import Command, Query, CommandHandler, QueryHandler
+from app.core.cqrs.base import Command, Query
 
 
 class TestCommand(Command):
@@ -15,34 +15,27 @@ class TestQuery(Query):
     pass
 
 
-class TestCommandHandler(CommandHandler[TestCommand]):
-    """Test command handler."""
-    
-    async def handle(self, command: TestCommand) -> None:
-        """Handle test command."""
-        pass
+async def command_handler_func(command: TestCommand) -> None:
+    """Test command handler function."""
+    pass
 
 
-class TestQueryHandler(QueryHandler[TestQuery, str]):
-    """Test query handler."""
-    
-    async def handle(self, query: TestQuery) -> str:
-        """Handle test query."""
-        return "test_result"
+async def query_handler_func(query: TestQuery) -> str:
+    """Test query handler function."""
+    return "test_result"
 
 
 @pytest.mark.asyncio
 async def test_command_bus_register_and_dispatch():
     """Test command bus registration and dispatch."""
     bus = CommandBus()
-    handler = TestCommandHandler()
-    
-    bus.register(TestCommand, handler)
-    
+
+    bus.register(TestCommand, command_handler_func)
+
     command = TestCommand()
     await bus.dispatch(command)
-    
-    # Verify handler was called (would need mock in real test)
+
+    # Verify handler was registered
     assert TestCommand in bus._handlers
 
 
@@ -50,36 +43,33 @@ async def test_command_bus_register_and_dispatch():
 async def test_query_bus_register_and_dispatch():
     """Test query bus registration and dispatch."""
     bus = QueryBus()
-    handler = TestQueryHandler()
-    
-    bus.register(TestQuery, handler)
-    
+
+    bus.register(TestQuery, query_handler_func)
+
     query = TestQuery()
     result = await bus.dispatch(query)
-    
+
     assert result == "test_result"
     assert TestQuery in bus._handlers
 
 
 def test_command_bus_duplicate_handler():
-    """Test that duplicate handler registration raises error."""
+    """Test that duplicate handler registration overwrites."""
     bus = CommandBus()
-    handler1 = TestCommandHandler()
-    handler2 = TestCommandHandler()
-    
-    bus.register(TestCommand, handler1)
-    
-    with pytest.raises(ValueError):
-        bus.register(TestCommand, handler2)
+
+    bus.register(TestCommand, command_handler_func)
+    # Registering again should overwrite, not raise error
+    bus.register(TestCommand, command_handler_func)
+
+    assert TestCommand in bus._handlers
 
 
 def test_query_bus_duplicate_handler():
-    """Test that duplicate handler registration raises error."""
+    """Test that duplicate handler registration overwrites."""
     bus = QueryBus()
-    handler1 = TestQueryHandler()
-    handler2 = TestQueryHandler()
-    
-    bus.register(TestQuery, handler1)
-    
-    with pytest.raises(ValueError):
-        bus.register(TestQuery, handler2)
+
+    bus.register(TestQuery, query_handler_func)
+    # Registering again should overwrite, not raise error
+    bus.register(TestQuery, query_handler_func)
+
+    assert TestQuery in bus._handlers

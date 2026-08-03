@@ -1,7 +1,16 @@
 """Pytest configuration."""
 
+import os
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+# Set test environment before importing app modules
+os.environ["DATABASE_URL"] = "postgresql+asyncpg://test:test@localhost:5432/tempus_test"
+os.environ["REDIS_URL"] = "redis://localhost:6379/1"
+os.environ["JWT_SECRET"] = "test_secret_key_for_testing_only"
+os.environ["ENCRYPTION_KEY"] = "test_encryption_key_for_testing_only"
+os.environ["TEMPUS_ENV"] = "test"
+os.environ["LOG_LEVEL"] = "DEBUG"
 
 from app.database.models import *  # Import all models
 from app.database.session import Base

@@ -53,7 +53,7 @@ class ConnectorCredential(Base):
     connector_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
     credential_type: Mapped[str] = mapped_column(String(50), nullable=False)  # oauth_token, api_key
     encrypted_token: Mapped[str] = mapped_column(Text, nullable=False)  # Encrypted token
-    token_metadata: Mapped[dict] = mapped_column(Text, nullable=True)  # JSON with expiry, scopes, etc.
+    credential_metadata: Mapped[dict] = mapped_column(Text, nullable=True)  # JSON with expiry, scopes, etc.
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 

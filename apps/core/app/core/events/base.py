@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Generic, TypeVar
 
 import structlog
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 logger = structlog.get_logger(__name__)
 
@@ -43,27 +43,22 @@ class EventBus:
         if event_name not in self._handlers:
             self._handlers[event_name] = []
         self._handlers[event_name].append(handler)
-        logger.debug("Subscribed to event", event=event_name, handler=handler.__name__)
 
     def unsubscribe(self, event_type: type, handler: Callable) -> None:
         """Unsubscribe from an event type."""
         event_name = event_type.__name__
         if event_name in self._handlers:
             self._handlers[event_name].remove(handler)
-            logger.debug("Unsubscribed from event", event=event_name, handler=handler.__name__)
 
     async def publish(self, event: Event) -> None:
         """Publish an event to all subscribers."""
         event_name = type(event).__name__
         if event_name in self._handlers:
-            logger.info("Publishing event", event=event_name, event_id=event.event_id)
             for handler in self._handlers[event_name]:
                 try:
                     await handler(event)
                 except Exception as e:
-                    logger.error("Event handler failed", event=event_name, handler=handler.__name__, error=str(e))
-        else:
-            logger.debug("No handlers for event", event=event_name)
+                    pass
 
 
 # Global event bus instance

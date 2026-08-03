@@ -20,7 +20,7 @@ class AuditLog(Base):
     action: Mapped[str] = mapped_column(String(100), nullable=False, index=True)  # task.create, memory.ingest
     resource_type: Mapped[str] = mapped_column(String(50), nullable=True)
     resource_id: Mapped[str] = mapped_column(String(36), nullable=True)
-    metadata: Mapped[dict] = mapped_column(Text, nullable=True)  # JSON with additional context
+    audit_metadata: Mapped[dict] = mapped_column(Text, nullable=True)  # JSON with additional context
     ip_address: Mapped[str] = mapped_column(String(45), nullable=True)
     user_agent: Mapped[str] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, index=True)

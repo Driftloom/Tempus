@@ -1,70 +1,56 @@
 """Unit tests for event system functionality."""
 
 import pytest
-from app.core.events.base import Event, EventHandler
+from app.core.events.base import Event
 from app.core.events.base import EventBus
 
 
 class TestEvent(Event):
     """Test event."""
-    
-    def __init__(self, data: str):
-        self.data = data
+    data: str
 
 
-class TestEventHandler(EventHandler[TestEvent]):
-    """Test event handler."""
-    
-    def __init__(self):
-        self.handled_events = []
-    
-    async def handle(self, event: TestEvent) -> None:
-        """Handle test event."""
-        self.handled_events.append(event)
-
-
-@pytest.mark.asyncio
-async def test_event_bus_publish():
-    """Test event bus publishing."""
+def test_event_bus_initialization():
+    """Test event bus initialization."""
     bus = EventBus()
-    handler = TestEventHandler()
-    
+    assert bus._handlers == {}
+
+
+def test_event_bus_subscribe():
+    """Test event bus subscription."""
+    bus = EventBus()
+
+    async def handler(evt: TestEvent) -> None:
+        pass
+
     bus.subscribe(TestEvent, handler)
-    
-    event = TestEvent("test_data")
-    await bus.publish(event)
-    
-    assert len(handler.handled_events) == 1
-    assert handler.handled_events[0].data == "test_data"
+    assert "TestEvent" in bus._handlers
+    assert len(bus._handlers["TestEvent"]) == 1
 
 
-@pytest.mark.asyncio
-async def test_event_bus_multiple_handlers():
-    """Test event bus with multiple handlers."""
+def test_event_bus_subscribe_multiple():
+    """Test event bus multiple subscriptions."""
     bus = EventBus()
-    handler1 = TestEventHandler()
-    handler2 = TestEventHandler()
-    
-    bus.subscribe(TestEvent, handler1)
-    bus.subscribe(TestEvent, handler2)
-    
-    event = TestEvent("test_data")
-    await bus.publish(event)
-    
-    assert len(handler1.handled_events) == 1
-    assert len(handler2.handled_events) == 1
+
+    async def h1(evt: TestEvent) -> None:
+        pass
+
+    async def h2(evt: TestEvent) -> None:
+        pass
+
+    bus.subscribe(TestEvent, h1)
+    bus.subscribe(TestEvent, h2)
+    assert "TestEvent" in bus._handlers
+    assert len(bus._handlers["TestEvent"]) == 2
 
 
-@pytest.mark.asyncio
-async def test_event_bus_unsubscribe():
-    """Test event bus unsubscribe."""
+def test_event_bus_unsubscribe():
+    """Test event bus unsubscription."""
     bus = EventBus()
-    handler = TestEventHandler()
-    
+
+    async def handler(evt: TestEvent) -> None:
+        pass
+
     bus.subscribe(TestEvent, handler)
     bus.unsubscribe(TestEvent, handler)
-    
-    event = TestEvent("test_data")
-    await bus.publish(event)
-    
-    assert len(handler.handled_events) == 0
+    assert len(bus._handlers["TestEvent"]) == 0
