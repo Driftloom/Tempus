@@ -1,6 +1,7 @@
 """Role-Based Access Control (RBAC)."""
 
 from enum import Enum
+from typing import Dict
 
 import structlog
 from fastapi import HTTPException, status
@@ -50,36 +51,45 @@ class Role(str, Enum):
     SUPER_ADMIN = "super_admin"
 
 
+# Define permission sets first
+USER_PERMISSIONS = {
+    Permission.USER_READ,
+    Permission.USER_WRITE,
+    Permission.TASK_READ,
+    Permission.TASK_WRITE,
+    Permission.TASK_COMPLETE,
+    Permission.MEMORY_READ,
+    Permission.MEMORY_WRITE,
+    Permission.CONNECTOR_READ,
+    Permission.CONNECTOR_WRITE,
+    Permission.NOTIFICATION_READ,
+    Permission.NOTIFICATION_WRITE,
+}
+
+PREMIUM_USER_PERMISSIONS = {
+    *USER_PERMISSIONS,
+    Permission.MEMORY_DELETE,
+    Permission.TASK_DELETE,
+}
+
+ADMIN_PERMISSIONS = {
+    *PREMIUM_USER_PERMISSIONS,
+    Permission.ADMIN_READ,
+    Permission.ADMIN_WRITE,
+    Permission.ADMIN_USER_MANAGE,
+}
+
+SUPER_ADMIN_PERMISSIONS = {
+    *ADMIN_PERMISSIONS,
+    Permission.ADMIN_DELETE,
+}
+
 # Role to permissions mapping
 ROLE_PERMISSIONS: Dict[Role, set[Permission]] = {
-    Role.USER: {
-        Permission.USER_READ,
-        Permission.USER_WRITE,
-        Permission.TASK_READ,
-        Permission.TASK_WRITE,
-        Permission.TASK_COMPLETE,
-        Permission.MEMORY_READ,
-        Permission.MEMORY_WRITE,
-        Permission.CONNECTOR_READ,
-        Permission.CONNECTOR_WRITE,
-        Permission.NOTIFICATION_READ,
-        Permission.NOTIFICATION_WRITE,
-    },
-    Role.PREMIUM_USER: {
-        *ROLE_PERMISSIONS[Role.USER],
-        Permission.MEMORY_DELETE,
-        Permission.TASK_DELETE,
-    },
-    Role.ADMIN: {
-        *ROLE_PERMISSIONS[Role.PREMIUM_USER],
-        Permission.ADMIN_READ,
-        Permission.ADMIN_WRITE,
-        Permission.ADMIN_USER_MANAGE,
-    },
-    Role.SUPER_ADMIN: {
-        *ROLE_PERMISSIONS[Role.ADMIN],
-        Permission.ADMIN_DELETE,
-    },
+    Role.USER: USER_PERMISSIONS,
+    Role.PREMIUM_USER: PREMIUM_USER_PERMISSIONS,
+    Role.ADMIN: ADMIN_PERMISSIONS,
+    Role.SUPER_ADMIN: SUPER_ADMIN_PERMISSIONS,
 }
 
 

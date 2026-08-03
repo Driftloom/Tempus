@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.models.memory import MemoryLayer, MemorySensitivity
 from app.database.session import get_db
 from app.memory.service import MemoryService
-from app.memory.engine.memory_engine import MemoryEngine
 from app.memory.classification.sensitivity_classifier import SensitivityClassifier
 from app.memory.classification.layer_classifier import LayerClassifier
 from app.auth.dependencies import get_current_user
@@ -19,7 +18,7 @@ router = APIRouter()
 def get_memory_service() -> MemoryService:
     """Dependency injection for MemoryService."""
     return MemoryService(
-        memory_engine=MemoryEngine(),
+        memory_engine=None,  # TODO: Add MemoryEngine when implemented
         sensitivity_classifier=SensitivityClassifier(),
         layer_classifier=LayerClassifier(),
         embedding_service=None  # TODO: Add embedding service

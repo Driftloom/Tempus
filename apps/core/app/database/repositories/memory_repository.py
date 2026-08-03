@@ -1,7 +1,6 @@
 """Memory repository."""
 
 
-from pgvector.sqlalchemy import max_inner_product
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,10 +28,9 @@ class MemoryRepository(BaseRepository[MemoryItem, dict, dict]):
         if sensitivity:
             query = query.where(MemoryItem.sensitivity == sensitivity)
 
-        # Add similarity ordering
-        query = query.order_by(
-            max_inner_product(MemoryItem.embedding, query_embedding).desc()
-        ).limit(limit)
+        # TODO: Add vector similarity ordering when pgvector is properly configured
+        # For now, order by importance score
+        query = query.order_by(MemoryItem.importance_score.desc()).limit(limit)
 
         result = await db.execute(query)
         return result.scalars().all()

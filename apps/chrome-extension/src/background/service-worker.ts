@@ -5,7 +5,7 @@
 
 const CORE_WS_URL = 'ws://localhost:8000/ws';
 let ws: WebSocket | null = null;
-let reconnectTimer: NodeJS.Timeout | null = null;
+let reconnectTimer: number | null = null;
 let isConnected = false;
 
 // WebSocket connection management
@@ -107,7 +107,8 @@ chrome.runtime.onInstalled.addListener(() => {
 
 // Handle extension icon click
 chrome.action.onClicked.addListener((tab) => {
-  chrome.sidePanel.open({ windowId: tab.windowId });
+  // TODO: Implement side panel when API is available
+  console.log('TEMPUS: Extension icon clicked');
 });
 
 // Handle messages from content scripts and side panel
